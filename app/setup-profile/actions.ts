@@ -43,6 +43,20 @@ export async function joinCohortSecurely(userId: string, targetCohortId?: string
     return { success: false, error: 'Failed to join cohort: ' + error.message }
   }
 
+  // Set the active cohort cookie so the dashboard immediately knows where to put them, preventing a redirect loop
+  try {
+    const { cookies } = await import('next/headers')
+    const cookieStore = await cookies()
+    cookieStore.set('active_cohort_id', finalCohortId, {
+      path: '/',
+      httpOnly: false,
+      maxAge: 60 * 60 * 24 * 30, // 30 days
+      sameSite: 'lax',
+    })
+  } catch (err) {
+    console.error("Failed to set cookie in server action", err)
+  }
+
   return { success: true }
 }
 
