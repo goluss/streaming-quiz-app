@@ -169,26 +169,28 @@ export default function ResourceLibraryClient({ initialTranscripts, initialGloba
     setAssigningLoading(true)
 
     try {
+      const { assignResource, assignPractice } = await import('../../app/admin/cohorts/actions')
+      
       if (activeTab === 'transcripts' && selectedTranscript) {
-        const { error } = await supabase.from('cohort_resources').insert({
-          cohort_id: targetCohortId,
-          session_id: targetSessionId || null,
+        const result = await assignPractice({
+          cohortId: targetCohortId,
+          sessionId: targetSessionId,
+          transcriptId: selectedTranscript.id,
           title: `Practice: ${selectedTranscript.title}`,
-          type: 'practice',
-          transcript_id: selectedTranscript.id,
-          section_title: sectionTitle.trim() || null
+          sectionTitle: sectionTitle.trim() || null
         })
-        if (error) throw error
+        if (!result.success) throw new Error(result.error)
       } else if (activeTab === 'materials' && selectedMaterial) {
-        const { error } = await supabase.from('cohort_resources').insert({
-          cohort_id: targetCohortId,
-          session_id: targetSessionId || null,
+        const result = await assignResource({
+          cohortId: targetCohortId,
+          sessionId: targetSessionId,
           title: selectedMaterial.title,
           url: selectedMaterial.url,
           type: selectedMaterial.type,
-          section_title: sectionTitle.trim() || null
+          filePath: selectedMaterial.file_path,
+          sectionTitle: sectionTitle.trim() || null
         })
-        if (error) throw error
+        if (!result.success) throw new Error(result.error)
       }
       alert('Successfully assigned!')
     } catch (err: any) {

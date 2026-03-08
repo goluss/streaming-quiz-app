@@ -97,15 +97,38 @@ export default function CohortDetailClient({ cohort, initialSessions, transcript
 
   const fetchResources = async () => {
     setLoadingResources(true)
-    const { data } = await supabase
-      .from('cohort_resources')
-      .select('*')
-      .eq('cohort_id', cohort.id)
-      .order('created_at', { ascending: false })
     
-    setResources(data || [])
-    setLoadingResources(false)
+    try {
+      // Get all resources for this cohort OR resources linked to any of this cohort's sessions
+      const sessionIds = sessions.map(s => s.id)
+      
+      let query = supabase
+        .from('cohort_resources')
+        .select('*')
+      
+      if (sessionIds.length > 0) {
+        query = query.or(`cohort_id.eq.${cohort.id},session_id.in.(${sessionIds.join(',')})`)
+      } else {
+        query = query.eq('cohort_id', cohort.id)
+      }
+
+      const { data, error } = await query.order('created_at', { ascending: false })
+      
+      if (error) throw error
+      setResources(data || [])
+    } catch (err: any) {
+      console.error('Error fetching resources:', err)
+    } finally {
+      setLoadingResources(false)
+    }
   }
+
+  // Refetch resources if sessions change (as sessionIds are used in the fetch)
+  useEffect(() => {
+    if (sessions.length > 0) {
+      fetchResources()
+    }
+  }, [sessions.length])
 
   const handleUpdateName = async () => {
     if (!cohortName.trim() || cohortName === cohort.name) {
@@ -202,27 +225,29 @@ export default function CohortDetailClient({ cohort, initialSessions, transcript
     }
 
     setLoadingResources(true)
-    const { data, error } = await supabase
-      .from('cohort_resources')
-      .insert({
-        cohort_id: cohort.id,
-        session_id: sessionId,
+    try {
+      const { assignResource } = await import('../../app/admin/cohorts/actions')
+      const result = await assignResource({
+        cohortId: cohort.id,
+        sessionId,
         title: resource.title,
         url: resource.url,
         type: resource.type,
-        file_path: resource.file_path, // Ensure file_path is copied
-        section_title: 'Session Materials'
+        filePath: resource.file_path,
+        sectionTitle: 'Session Materials'
       })
-      .select()
-      .single()
 
-    if (error) {
-      console.error('Failed to assign resource:', error)
-      alert(`Failed to assign resource: ${error.message}${error.details ? ' - ' + error.details : ''}`)
-    } else if (data) {
-      setResources(prev => [data, ...prev])
+      if (result.success && result.data) {
+        setResources(prev => [result.data as CohortResource, ...prev])
+      } else {
+        alert(`Failed to assign resource: ${result.error}`)
+      }
+    } catch (err: any) {
+      console.error('Unexpected error in handleAssignResource:', err)
+      alert('An unexpected error occurred.')
+    } finally {
+      setLoadingResources(false)
     }
-    setLoadingResources(false)
   }
 
   const handleAssignPractice = async (sessionId: string, transcriptId: string) => {
@@ -237,27 +262,27 @@ export default function CohortDetailClient({ cohort, initialSessions, transcript
     // find the order from the sessions state
     const orderNum = sessions.findIndex(s => s.id === sessionId) + 1
 
-    const { data, error } = await supabase
-      .from('cohort_resources')
-      .insert({
-        cohort_id: cohort.id,
-        session_id: sessionId,
+    try {
+      const { assignPractice } = await import('../../app/admin/cohorts/actions')
+      const result = await assignPractice({
+        cohortId: cohort.id,
+        sessionId,
+        transcriptId,
         title: `Session ${orderNum} - Practice Questions`,
-        url: '#', // Placeholder for practice
-        type: 'practice',
-        transcript_id: transcriptId,
-        section_title: 'Session Materials'
+        sectionTitle: 'Session Materials'
       })
-      .select()
-      .single()
 
-    if (error) {
-      console.error('Failed to assign practice:', error)
-      alert(`Failed to assign practice: ${error.message}${error.details ? ' - ' + error.details : ''}`)
-    } else if (data) {
-      setResources(prev => [data, ...prev])
+      if (result.success && result.data) {
+        setResources(prev => [result.data as CohortResource, ...prev])
+      } else {
+        alert(`Failed to assign practice: ${result.error}`)
+      }
+    } catch (err: any) {
+      console.error('Unexpected error in handleAssignPractice:', err)
+      alert('An unexpected error occurred.')
+    } finally {
+      setLoadingResources(false)
     }
-    setLoadingResources(false)
   }
 
   const handleDeleteResource = async (resourceId: string) => {

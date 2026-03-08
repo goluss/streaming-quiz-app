@@ -99,20 +99,20 @@ export default async function ResultsPage({ params }: PageProps) {
       </div>
 
       {/* Email notice */}
-      <div className="mb-6 bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 flex items-center gap-2 text-sm text-slate-400">
+      <div className="mb-6 bg-white border border-slate-200 rounded-xl px-4 py-3 flex items-center gap-2 text-sm text-slate-500 shadow-sm">
         <span>📧</span>
         <span>A results summary has been sent to your email.</span>
       </div>
 
       {/* Review Table */}
-      <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-800">
-          <h2 className="font-semibold text-white">Question Review</h2>
-          <p className="text-xs text-slate-400 mt-0.5">
+      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+        <div className="px-6 py-4 border-b border-slate-100">
+          <h2 className="font-semibold text-slate-900">Question Review</h2>
+          <p className="text-xs text-slate-500 mt-0.5">
             Correct answers shown in green · Your incorrect answers shown in red
           </p>
         </div>
-        <div className="divide-y divide-slate-800">
+        <div className="divide-y divide-slate-100">
           {answers.map((ans, idx) => {
             const q = questionMap[ans.question_id]
             const options: { label: string; text: string }[] = q?.options ?? []
@@ -130,22 +130,22 @@ export default async function ResultsPage({ params }: PageProps) {
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-white mb-2">
-                      <span className="text-slate-500 mr-2">Q{idx + 1}.</span>
+                    <p className="text-sm font-bold text-slate-900 mb-2">
+                      <span className="text-slate-400 mr-2">Q{idx + 1}.</span>
                       {q?.question_text ?? `Question ${idx + 1}`}
                     </p>
                     <div className="space-y-1">
                       {!ans.is_correct && (
                         <div className="flex items-center gap-2 text-xs">
-                          <span className="text-slate-500 w-20 flex-shrink-0">Your answer:</span>
-                          <span className="text-red-400">{ans.chosen_answer}. {chosenText ?? ans.chosen_answer}</span>
+                          <span className="text-slate-400 w-20 flex-shrink-0">Your answer:</span>
+                          <span className="text-red-600 font-medium">{ans.chosen_answer}. {chosenText ?? ans.chosen_answer}</span>
                         </div>
                       )}
                       <div className="flex items-center gap-2 text-xs">
-                        <span className="text-slate-500 w-20 flex-shrink-0">
+                        <span className="text-slate-400 w-20 flex-shrink-0">
                           {ans.is_correct ? 'Your answer:' : 'Correct:'}
                         </span>
-                        <span className="text-emerald-400">{ans.correct_answer}. {correctText ?? ans.correct_answer}</span>
+                        <span className="text-emerald-600 font-medium">{ans.correct_answer}. {correctText ?? ans.correct_answer}</span>
                       </div>
                     </div>
                   </div>
