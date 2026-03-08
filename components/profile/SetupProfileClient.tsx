@@ -28,23 +28,6 @@ export default function SetupProfileClient({ profile, email }: Props) {
     setError(null)
 
     try {
-      let targetCohortId = profile?.cohort_id
-
-      if (inviteCode.trim()) {
-        const { data: cohort, error: cohortError } = await supabase
-          .from('cohorts')
-          .select('id')
-          .eq('invite_code', inviteCode.trim().toUpperCase())
-          .single()
-
-        if (cohortError || !cohort) {
-          setLoading(false)
-          setError('Invalid Cohort Invite Code. Please check the code and try again.')
-          return
-        }
-        targetCohortId = cohort.id
-      }
-
       const { error: upsertError } = await supabase
         .from('profiles')
         .update({
@@ -52,8 +35,6 @@ export default function SetupProfileClient({ profile, email }: Props) {
           last_name: lastName.trim(),
           company: company.trim(),
           company_email: companyEmail.trim(),
-          // Keep cohort_id for backward compatibility
-          ...(targetCohortId ? { cohort_id: targetCohortId } : {})
         })
         .eq('id', profile.id)
 
@@ -63,9 +44,13 @@ export default function SetupProfileClient({ profile, email }: Props) {
         return
       }
 
-      // New: If they have a cohort, also ensure they are in the junction table securely
-      if (targetCohortId) {
-        await joinCohortSecurely(profile.id, targetCohortId)
+      // Automatically join the passed cohort ID or validate/join the manual invite string securely on the backend
+      const result = await joinCohortSecurely(profile.id, profile?.cohort_id, inviteCode.trim())
+      
+      if (!result?.success) {
+        setLoading(false)
+        setError(result?.error || 'Failed to join cohort. Please check your invite code.')
+        return
       }
 
       setLoading(false)
