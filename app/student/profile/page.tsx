@@ -26,8 +26,10 @@ export default async function StudentProfilePage() {
       <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 sm:p-10 relative overflow-hidden">
         <div className="absolute top-0 left-0 w-1.5 h-full bg-[#003B71]" />
         <h3 className="text-xl font-bold text-slate-900 mb-8">Personal Information</h3>
-        <SetupProfileClient profile={profile ?? { id: user.id }} />
-      </div>
+<SetupProfileClient 
+  profile={profile ?? null}
+  email={profile?.email ?? ""}
+/>      </div>
     </div>
   )
 }
