@@ -68,64 +68,26 @@ export default function TestsClient({ tests: initialTests, transcripts, cohorts,
     setLoading(true)
     setMessage(null)
 
-    const code = generateCode()
-
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      
-      // 1. Create the test
-      const { data: test, error: testError } = await supabase
-        .from('tests')
-        .insert({
-          name: name.trim(),
-          code,
-          cohort_id: cohortId || null,
-          created_by: user?.id
-        })
-        .select()
-        .single()
+      // Import dynamically at runtime to avoid missing imports at the top
+      const { createQuizSecurely } = await import('../../app/admin/tests/actions')
+      const result = await createQuizSecurely(name.trim(), cohortId, selectedQuestionIds)
 
-      if (testError) throw testError
+      if (!result.success) {
+        setLoading(false)
+        setMessage({ type: 'error', text: result.error || 'Failed to construct the quiz.' })
+        return
+      }
 
-      // 2. Link selected questions
-      const questionLinks = selectedQuestionIds.map(qid => ({
-        test_id: test.id,
-        question_id: qid
-      }))
-
-      const { error: linkError } = await supabase
-        .from('test_questions')
-        .insert(questionLinks)
-
-      if (linkError) throw linkError
-
-      // 3. Fetch full test data for UI
-      const { data: fullTest, error: fetchError } = await supabase
-        .from('tests')
-        .select(`
-          *,
-          transcripts ( title ),
-          cohorts ( name ),
-          test_questions (
-            question_id,
-            questions ( question_text )
-          )
-        `)
-        .eq('id', test.id)
-        .single()
-
-      if (fetchError) throw fetchError
-
-      setTests([fullTest, ...tests])
+      setTests([result.test, ...tests])
       setName('')
       setCohortId('')
       setSelectedQuestionIds([])
       setShowForm(false)
-      setMessage({ type: 'success', text: `Quiz created! Code: ${code}` })
+      setMessage({ type: 'success', text: `Quiz created! Code: ${result.code}` })
     } catch (error: any) {
-      setMessage({ type: 'error', text: error.message })
+      setMessage({ type: 'error', text: error?.message || 'A catastrophic error occurred on the frontend.' })
     } finally {
-      setLoading(true) // wait for refresh or keep loading false
       setLoading(false)
     }
   }
