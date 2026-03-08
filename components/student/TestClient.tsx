@@ -16,16 +16,22 @@ interface Props {
     category?: string | null
   }[]
   testId: string
-  transcriptId: string
+  transcriptId: string | null
   user: { id: string; email: string; name?: string | null }
   fixedCount?: number
 }
 
+import { verifyTestCode, submitTestAttempt } from '@/app/student/tests/actions'
+
 export default function TestClient({ questions, testId, transcriptId, user, fixedCount }: Props) {
-  const [randomizedTest] = useState<RandomizedQuestion[]>(() =>
-    generateRandomizedTest(questions, fixedCount ?? 5)
-  )
+  const [randomizedTest, setRandomizedTest] = useState<RandomizedQuestion[]>([])
+  const [isMounted, setIsMounted] = useState(false)
   const [currentIdx, setCurrentIdx] = useState(0)
+
+  useEffect(() => {
+    setRandomizedTest(generateRandomizedTest(questions, fixedCount ?? 5))
+    setIsMounted(true)
+  }, [questions, fixedCount])
   const [answers, setAnswers] = useState<Record<string, string>>({})
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
@@ -57,28 +63,22 @@ export default function TestClient({ questions, testId, transcriptId, user, fixe
     setSubmitting(true)
     const result = gradeTest(randomizedTest, answers)
 
-    // Persist to Supabase
-    const { data: attempt, error } = await supabase
-      .from('test_attempts')
-      .insert({
-        user_id: user.id,
-        test_id: testId,
-        transcript_id: transcriptId,
-        score: result.score,
-        total_questions: result.total_questions,
-        correct_count: result.correct_count,
-        answers_provided: result.answers,
-      })
-      .select('id')
-      .single()
+    const response = await submitTestAttempt({
+      testId,
+      transcriptId,
+      score: result.score,
+      totalQuestions: result.total_questions,
+      correctCount: result.correct_count,
+      answers: result.answers
+    })
 
-    if (!error && attempt) {
+    if (response.success && response.attemptId) {
       // Trigger email (fire-and-forget in Phase 1)
       fetch('/api/send-result-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          attemptId: attempt.id,
+          attemptId: response.attemptId,
           email: user.email,
           name: user.name ?? user.email,
           score: result.score,
@@ -87,14 +87,16 @@ export default function TestClient({ questions, testId, transcriptId, user, fixe
         }),
       }).catch(() => {}) // non-blocking
 
-      router.push(`/student/results/${attempt.id}`)
+      // Navigate to the results review page (hard redirect to bypass Nextjs client-render router caching bugs)
+      window.location.href = `/student/results/${response.attemptId}`
     } else {
-      const errorMsg = error?.message || JSON.stringify(error) || 'Unknown Database Error'
-      console.error('Failed to save attempt:', error)
-      alert(`Failed to save quiz attempt! Reason: ${errorMsg}. Please take a screenshot of this error.`)
+      console.error('Failed to save attempt:', response.error)
+      alert(`Failed to save quiz attempt! Reason: ${response.error}. Please take a screenshot of this error.`)
       setSubmitting(false)
     }
   }
+
+  if (!isMounted) return null
 
   if (!currentQuestion) {
     return <div className="text-slate-400 text-center py-20">No questions available.</div>

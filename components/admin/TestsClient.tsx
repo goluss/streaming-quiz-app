@@ -115,11 +115,23 @@ export default function TestsClient({ tests: initialTests, transcripts, cohorts,
   const handleDelete = async (id: string, code: string) => {
     if (!confirm(`Delete quiz ${code}? Students will no longer be able to take it.`)) return
 
-    const { error } = await supabase.from('tests').delete().eq('id', id)
-    if (error) {
-      setMessage({ type: 'error', text: error.message })
-    } else {
-      setTests((prev) => prev.filter((t) => t.id !== id))
+    setLoading(true)
+    setMessage(null)
+
+    try {
+      const { deleteQuiz } = await import('../../app/admin/tests/actions')
+      const result = await deleteQuiz(id)
+
+      if (result.success) {
+        setTests((prev) => prev.filter((t) => t.id !== id))
+        setMessage({ type: 'success', text: `Quiz ${code} deleted.` })
+      } else {
+        setMessage({ type: 'error', text: result.error || 'Failed to delete quiz.' })
+      }
+    } catch (error: any) {
+      setMessage({ type: 'error', text: error?.message || 'A catastrophic error occurred during deletion.' })
+    } finally {
+      setLoading(false)
     }
   }
 

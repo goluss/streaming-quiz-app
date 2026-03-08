@@ -54,7 +54,7 @@ export default async function TestPage({
       return q ? [q] : []
     })
     usingAssigned = true
-  } else {
+  } else if (test.transcript_id) {
     // Fall back: pull all transcript questions
     const { data: transcriptQs, error: qError } = await supabase
       .from('questions')
@@ -73,6 +73,13 @@ export default async function TestPage({
     }
 
     questions = transcriptQs as Question[]
+  } else {
+    return (
+      <div className="p-8 text-center">
+        <h2 className="text-xl text-red-400 font-bold mb-2">No Questions Assigned</h2>
+        <p className="text-slate-400">This standalone quiz does not have any questions assigned to it.</p>
+      </div>
+    )
   }
 
   const questionCount = questions.length

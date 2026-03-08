@@ -77,3 +77,25 @@ export async function createQuizSecurely(name: string, cohortId: string, selecte
     return { success: false, error: error.message || 'An unexpected error occurred.' }
   }
 }
+
+export async function deleteQuiz(id: string) {
+  const supabase = await createClient()
+
+  try {
+    const { error } = await supabase
+      .from('tests')
+      .delete()
+      .eq('id', id)
+
+    if (error) {
+      console.error("Test Deletion Error:", error)
+      return { success: false, error: error.message || 'Failed to delete test.' }
+    }
+
+    revalidatePath('/admin/tests')
+    return { success: true }
+  } catch (error: any) {
+    console.error("Unexpected error in deleteQuiz:", error)
+    return { success: false, error: error.message || 'An unexpected error occurred.' }
+  }
+}

@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { ArrowRightIcon } from '@heroicons/react/24/outline'
+import { verifyTestCode } from '@/app/student/tests/actions'
 
 export default function TestCodeEntry() {
   const [code, setCode] = useState('')
@@ -25,22 +26,17 @@ export default function TestCodeEntry() {
     setLoading(true)
     setError(null)
 
-    // Check if test exists and is active
-    const { data: test, error: fetchError } = await supabase
-      .from('tests')
-      .select('id, name')
-      .eq('code', cleanCode)
-      .eq('is_active', true)
-      .single()
+    // Check if test exists and is active using the Backend Action
+    const result = await verifyTestCode(cleanCode)
 
-    if (fetchError || !test) {
-      setError(`Database Error: ${fetchError?.message || 'Quiz not found or inactive.'}`)
+    if (!result.success) {
+      setError(`Verification Error: ${result.error}`)
       setLoading(false)
       return
     }
 
-    // Code is valid - redirect to test taking interface
-    router.push(`/student/quiz?code=${cleanCode}`)
+    // Code is valid - bypass Next.js soft navigation router cache to prevent infinite load hangs
+    window.location.href = `/student/test?code=${cleanCode}`
   }
 
   return (

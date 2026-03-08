@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { generateRandomizedTest, type RandomizedQuestion } from '@/lib/test-generator'
 import Link from 'next/link'
 import { CheckCircleIcon, XCircleIcon, ArrowLeftIcon, ArrowRightIcon, AcademicCapIcon } from '@heroicons/react/24/outline'
@@ -18,12 +18,18 @@ interface Props {
 }
 
 export default function PracticeClient({ questions, transcriptTitle }: Props) {
-  const [randomizedTest] = useState<RandomizedQuestion[]>(() =>
-    generateRandomizedTest(questions, 10, false)
-  )
+  const [randomizedTest, setRandomizedTest] = useState<RandomizedQuestion[]>([])
+  const [isMounted, setIsMounted] = useState(false)
   const [currentIdx, setCurrentIdx] = useState(0)
+
+  useEffect(() => {
+    setRandomizedTest(generateRandomizedTest(questions, 10, false))
+    setIsMounted(true)
+  }, [questions])
+
   const [responses, setResponses] = useState<Record<string, 'A' | 'B' | 'C' | 'D'>>({})
   const [showFeedback, setShowFeedback] = useState(false)
+
   
   const currentQuestion = randomizedTest[currentIdx]
   const totalQuestions = randomizedTest.length
@@ -50,6 +56,8 @@ export default function PracticeClient({ questions, transcriptTitle }: Props) {
       setShowFeedback(true) // Always show feedback if they go back to an answered question
     }
   }
+
+  if (!isMounted) return null
 
   if (!currentQuestion) {
     return (
