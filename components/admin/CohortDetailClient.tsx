@@ -61,9 +61,10 @@ interface Props {
   initialSessions: CohortSession[]
   transcripts: { id: string, title: string }[]
   globalResources: { id: string, title: string, url: string, type: 'link' | 'document' | 'video', file_path?: string }[]
+  students: { id: string, full_name: string | null, email: string, created_at: string }[]
 }
 
-export default function CohortDetailClient({ cohort, initialSessions, transcripts, globalResources }: Props) {
+export default function CohortDetailClient({ cohort, initialSessions, transcripts, globalResources, students }: Props) {
   const [sessions, setSessions] = useState<CohortSession[]>(initialSessions)
   const [analytics, setAnalytics] = useState<TestAttempt[]>([])
   const [questionStats, setQuestionStats] = useState<QuestionStat[]>([])
@@ -539,26 +540,19 @@ export default function CohortDetailClient({ cohort, initialSessions, transcript
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 bg-white">
-                    {(() => {
-                      const uniqueStudents: Record<string, { name: string, email: string, date: string }> = {}
-                      analytics.forEach(a => {
-                        const p = Array.isArray(a.profiles) ? a.profiles[0] : a.profiles
-                        if (p && !uniqueStudents[p.email]) {
-                          uniqueStudents[p.email] = { name: p.full_name || 'Anonymous', email: p.email, date: a.created_at }
-                        }
-                      })
-                      const list = Object.values(uniqueStudents)
-                      if (list.length === 0) return <tr><td colSpan={3} className="px-5 py-12 text-center text-slate-500 italic">No students assigned to this cohort yet.</td></tr>
-                      return list.map(s => (
-                        <tr key={s.email} className="hover:bg-slate-50 transition-colors">
-                          <td className="px-5 py-4 font-bold text-slate-900">{s.name}</td>
+                    {students.length === 0 ? (
+                      <tr><td colSpan={3} className="px-5 py-12 text-center text-slate-500 italic">No students assigned to this cohort yet.</td></tr>
+                    ) : (
+                      students.map(s => (
+                        <tr key={s.id} className="hover:bg-slate-50 transition-colors">
+                          <td className="px-5 py-4 font-bold text-slate-900">{s.full_name || 'Anonymous'}</td>
                           <td className="px-5 py-4 text-slate-500">{s.email}</td>
                           <td className="px-5 py-4 text-right text-slate-400 font-medium">
-                            {new Date(s.date).toLocaleDateString()}
+                            {new Date(s.created_at).toLocaleDateString()}
                           </td>
                         </tr>
                       ))
-                    })()}
+                    )}
                   </tbody>
                 </table>
               </div>

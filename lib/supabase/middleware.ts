@@ -52,14 +52,14 @@ export async function updateSession(request: NextRequest) {
 
     const needsSetup = !profile?.first_name || !profile?.last_name || !profile?.company || !profile?.company_email
 
-    // Force setup if needed
-    if (needsSetup && !isSetupPage && !isAuthPage) {
+    // Force setup if needed (only on GET requests so we don't intercept Server Actions)
+    if (needsSetup && !isSetupPage && !isAuthPage && request.method === 'GET') {
       url.pathname = '/setup-profile'
       return NextResponse.redirect(url)
     }
 
-    // Redirect away from setup page if already complete
-    if (!needsSetup && isSetupPage) {
+    // Redirect away from setup page if already complete (only on GET requests)
+    if (!needsSetup && isSetupPage && request.method === 'GET') {
       url.pathname = '/student'
       return NextResponse.redirect(url)
     }

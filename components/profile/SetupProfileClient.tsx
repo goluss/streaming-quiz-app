@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
+import { joinCohortSecurely } from '@/app/setup-profile/actions'
 
 interface Props {
   profile: any
@@ -26,55 +27,54 @@ export default function SetupProfileClient({ profile, email }: Props) {
     setLoading(true)
     setError(null)
 
-    let targetCohortId = profile?.cohort_id
+    try {
+      let targetCohortId = profile?.cohort_id
 
-    if (inviteCode.trim()) {
-      const { data: cohort, error: cohortError } = await supabase
-        .from('cohorts')
-        .select('id')
-        .eq('invite_code', inviteCode.trim().toUpperCase())
-        .single()
+      if (inviteCode.trim()) {
+        const { data: cohort, error: cohortError } = await supabase
+          .from('cohorts')
+          .select('id')
+          .eq('invite_code', inviteCode.trim().toUpperCase())
+          .single()
 
-      if (cohortError || !cohort) {
+        if (cohortError || !cohort) {
+          setLoading(false)
+          setError('Invalid Cohort Invite Code. Please check the code and try again.')
+          return
+        }
+        targetCohortId = cohort.id
+      }
+
+      const { error: upsertError } = await supabase
+        .from('profiles')
+        .update({
+          first_name: firstName.trim(),
+          last_name: lastName.trim(),
+          company: company.trim(),
+          company_email: companyEmail.trim(),
+          // Keep cohort_id for backward compatibility
+          ...(targetCohortId ? { cohort_id: targetCohortId } : {})
+        })
+        .eq('id', profile.id)
+
+      if (upsertError) {
         setLoading(false)
-        setError('Invalid Cohort Invite Code. Please check the code and try again.')
+        setError(upsertError.message || 'Failed to securely save your profile. Please try again.')
         return
       }
-      targetCohortId = cohort.id
-    }
 
-    const { error: upsertError } = await supabase
-      .from('profiles')
-      .upsert({
-        id: profile.id,
-        email: email,
-        first_name: firstName.trim(),
-        last_name: lastName.trim(),
-        company: company.trim(),
-        company_email: companyEmail.trim(),
-        // Keep cohort_id for backward compatibility
-        ...(targetCohortId ? { cohort_id: targetCohortId } : {})
-      })
+      // New: If they have a cohort, also ensure they are in the junction table securely
+      if (targetCohortId) {
+        await joinCohortSecurely(profile.id, targetCohortId)
+      }
 
-    if (upsertError) {
       setLoading(false)
-      setError(upsertError.message || 'Failed to securely save your profile. Please try again.')
-      return
+      router.push('/student')
+      router.refresh()
+    } catch (err: any) {
+      setLoading(false)
+      setError(err.message || 'An unexpected error occurred during profile setup. Please try again.')
     }
-
-    // New: If they have a cohort, also ensure they are in the junction table
-    if (targetCohortId) {
-      await supabase
-        .from('student_cohorts')
-        .upsert({
-          user_id: profile.id,
-          cohort_id: targetCohortId
-        })
-    }
-
-    setLoading(false)
-    router.push('/student')
-    router.refresh()
   }
 
   return (

@@ -29,8 +29,8 @@ export default async function CohortDetailPage({ params }: { params: Promise<{ i
 
   if (!cohort) redirect('/admin/cohorts')
 
-  // Fetch sessions, transcripts, and global resources
-  const [{ data: initialSessions }, { data: transcripts }, { data: globalResources }] = await Promise.all([
+  // Fetch sessions, transcripts, global resources, and students
+  const [{ data: initialSessions }, { data: transcripts }, { data: globalResources }, { data: students }] = await Promise.all([
     supabase
       .from('cohort_sessions')
       .select('id, title, description, created_at')
@@ -44,6 +44,12 @@ export default async function CohortDetailPage({ params }: { params: Promise<{ i
       .from('global_resources')
       .select('*')
       .order('title', { ascending: true }),
+    supabase
+      .from('profiles')
+      .select('id, full_name, email, created_at')
+      .eq('cohort_id', id)
+      .eq('role', 'student')
+      .order('full_name', { ascending: true }),
   ])
 
   return (
@@ -60,6 +66,7 @@ export default async function CohortDetailPage({ params }: { params: Promise<{ i
         initialSessions={initialSessions ?? []}
         transcripts={transcripts ?? []}
         globalResources={globalResources ?? []}
+        students={students ?? []}
       />
     </div>
   )
