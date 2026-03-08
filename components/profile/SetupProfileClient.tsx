@@ -139,7 +139,6 @@ export default function SetupProfileClient({ profile, email }: Props) {
         <label className="block text-xs font-extrabold text-emerald-600 uppercase tracking-widest mb-2 ml-1">Cohort Invite Code</label>
         <input
           type="text"
-          required
           value={inviteCode}
           onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
           className="w-full bg-emerald-50 border border-emerald-100 rounded-xl px-4 py-3 text-emerald-900 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all uppercase font-bold"
@@ -152,7 +151,7 @@ export default function SetupProfileClient({ profile, email }: Props) {
       <div className="pt-4">
         <button
           type="submit"
-          disabled={loading || !firstName.trim() || !lastName.trim() || !company.trim() || !companyEmail.trim() || !inviteCode.trim()}
+          disabled={loading || !firstName.trim() || !lastName.trim() || !company.trim() || !companyEmail.trim()}
           className="w-full bg-[#003B71] hover:bg-[#00264d] disabled:opacity-50 disabled:cursor-not-allowed text-white px-8 py-4 rounded-xl text-sm font-black uppercase tracking-widest transition-all shadow-lg active:scale-95"
         >
           {loading ? 'Saving Profile...' : 'Update Account Profile'}

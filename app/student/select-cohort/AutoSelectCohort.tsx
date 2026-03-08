@@ -1,12 +1,18 @@
 'use client'
 
 import { useEffect } from 'react'
-import { setActiveCohort } from './actions'
+import { useRouter } from 'next/navigation'
+import { setCohortCookie } from './actions'
 
 export default function AutoSelectCohort({ cohortId }: { cohortId: string }) {
+  const router = useRouter()
+
   useEffect(() => {
-    setActiveCohort(cohortId)
-  }, [cohortId])
+    setCohortCookie(cohortId).then(() => {
+      router.push('/student')
+      router.refresh()
+    })
+  }, [cohortId, router])
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 text-center">
