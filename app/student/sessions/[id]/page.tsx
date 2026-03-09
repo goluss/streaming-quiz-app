@@ -107,7 +107,7 @@ export default async function SessionDetailPage({
               const isVideo = res.type === 'video'
               const isDoc = res.type === 'document'
               const isPractice = res.type === 'practice'
-
+              const isTest = res.type === 'test'
               if (isPractice) {
                 return (
                   <Link
@@ -117,7 +117,7 @@ export default async function SessionDetailPage({
                   >
                     <div className="p-3 rounded-xl shrink-0 mt-1 bg-emerald-500 text-white shadow-lg shadow-emerald-200">
                       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M4.26 10.147a60.438 60.438 0 0 0-.491 6.347A48.62 index.62 0 0 1 12 20.904a48.62 index.62 0 0 1 8.232-4.41 60.46 index.46 0 0 0-.491-6.347m-15.482 0a50.636 50.636 0 0 0-2.658-.813A59.905 59.905 0 0 1 12 3.493a59.903 59.903 0 0 1 10.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A44.716 44.716 0 0 1 12 13.5a44.71 index.71 0 0 1 8.232-3.353m0 0a40.705 40.705 0 0 0-8.232-4.473" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M4.26 10.147a60.438 60.438 0 0 0-.491 6.347A48.62 48.62 0 0 1 12 20.904a48.62 48.62 0 0 1 8.232-4.41 60.46 60.46 0 0 0-.491-6.347m-15.482 0a50.636 50.636 0 0 0-2.658-.813A59.905 59.905 0 0 1 12 3.493a59.903 59.903 0 0 1 10.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A44.716 44.716 0 0 1 12 13.5a44.71 44.71 0 0 1 8.232-3.353m0 0a40.705 40.705 0 0 0-8.232-4.473" />
                       </svg>
                     </div>
                     <div className="flex-1 min-w-0">
@@ -137,6 +137,41 @@ export default async function SessionDetailPage({
                     <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all translate-x-2 group-hover:translate-x-0">
                       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5 text-emerald-600">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                      </svg>
+                    </div>
+                  </Link>
+                )
+              }
+
+              if (res.type === 'test') {
+                return (
+                  <Link
+                    key={res.id}
+                    href={`/student/test?id=${res.test_id}`}
+                    className="flex items-start gap-4 p-5 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-2xl shadow-sm transition-all group relative overflow-hidden"
+                  >
+                    <div className="p-3 rounded-xl shrink-0 mt-1 bg-amber-500 text-white shadow-lg shadow-amber-200">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25ZM6.75 12h.008v.008H6.75V12Zm0 3h.008v.008H6.75V15Zm0 3h.008v.008H6.75V18Z" />
+                      </svg>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-base font-bold text-amber-900 line-clamp-2">
+                        {res.title}
+                      </h3>
+                      <div className="flex items-center gap-2 mt-2">
+                        <span className="text-[10px] font-extrabold uppercase tracking-widest text-amber-600/60">
+                          {new Date(res.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </span>
+                        <span className="w-1 h-1 rounded-full bg-amber-300"></span>
+                        <span className="text-[10px] font-extrabold uppercase tracking-widest text-amber-600">
+                          Graded Quiz
+                        </span>
+                      </div>
+                    </div>
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all translate-x-2 group-hover:translate-x-0">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5 text-amber-600">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
                       </svg>
                     </div>
                   </Link>

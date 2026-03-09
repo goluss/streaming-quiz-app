@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { ArrowDownTrayIcon, UserPlusIcon, CheckCircleIcon, XMarkIcon, ChartPieIcon, TableCellsIcon, LinkIcon, PlusIcon, TrashIcon, CloudArrowUpIcon, PaperClipIcon, FilmIcon, DocumentTextIcon, ChevronDownIcon, ChevronUpIcon, TrophyIcon, PencilIcon, CheckIcon, AcademicCapIcon, UserGroupIcon } from '@heroicons/react/24/outline'
-import { assignResource, assignPractice, renameSession, removeResource } from '../../app/admin/cohorts/actions'
+import { ArrowDownTrayIcon, UserPlusIcon, CheckCircleIcon, XMarkIcon, ChartPieIcon, TableCellsIcon, LinkIcon, PlusIcon, TrashIcon, CloudArrowUpIcon, PaperClipIcon, FilmIcon, DocumentTextIcon, ChevronDownIcon, ChevronUpIcon, TrophyIcon, PencilIcon, CheckIcon, AcademicCapIcon, UserGroupIcon, ChartBarIcon, ClipboardDocumentCheckIcon, UserIcon } from '@heroicons/react/24/outline'
+import { assignResource, assignPractice, assignTest, renameSession, removeResource } from '../../app/admin/cohorts/actions'
 
 interface Profile {
   id: string
@@ -49,25 +49,35 @@ interface QuestionStat {
 
 interface CohortResource {
   id: string
+  cohort_id: string
   title: string
   url: string
-  type: 'link' | 'document' | 'video' | 'practice'
+  type: 'link' | 'document' | 'video' | 'practice' | 'test'
   file_path?: string
   transcript_id?: string | null
+  test_id?: string | null
   session_id?: string | null
   section_title?: string | null
   created_at: string
 }
 
-interface Props {
-  cohort: Cohort
-  initialSessions: CohortSession[]
-  transcripts: { id: string, title: string }[]
-  globalResources: { id: string, title: string, url: string, type: 'link' | 'document' | 'video', file_path?: string }[]
-  students: { id: string, full_name: string | null, email: string, created_at: string }[]
+interface Test {
+  id: string
+  name: string
 }
 
-export default function CohortDetailClient({ cohort, initialSessions, transcripts, globalResources, students }: Props) {
+interface Props {
+  cohort: any
+  initialSessions: CohortSession[]
+  transcripts: { id: string; title: string }[]
+  globalResources: any[]
+  students: any[]
+  tests: Test[]
+}
+
+export default function CohortDetailClient({ cohort, initialSessions, transcripts, globalResources, students, 
+  tests 
+}: Props) {
   const [sessions, setSessions] = useState<CohortSession[]>(initialSessions)
   const [analytics, setAnalytics] = useState<TestAttempt[]>([])
   const [questionStats, setQuestionStats] = useState<QuestionStat[]>([])
@@ -305,6 +315,32 @@ export default function CohortDetailClient({ cohort, initialSessions, transcript
       }
     } catch (err: any) {
       console.error('Unexpected error in handleAssignPractice:', err)
+      alert('An unexpected error occurred.')
+    } finally {
+      setLoadingResources(false)
+    }
+  }
+
+  const handleAssignTest = async (sessionId: string, testId: string) => {
+    const test = tests.find(t => t.id === testId)
+    if (!test) return
+
+    setLoadingResources(true)
+    try {
+      const result = await assignTest({
+        cohortId: cohort.id,
+        sessionId,
+        testId,
+        title: test.name
+      })
+
+      if (result.success && result.data) {
+        setResources(prev => [result.data as CohortResource, ...prev])
+      } else {
+        alert(`Failed to assign test: ${result.error}`)
+      }
+    } catch (err: any) {
+      console.error('Unexpected error in handleAssignTest:', err)
       alert('An unexpected error occurred.')
     } finally {
       setLoadingResources(false)
@@ -789,6 +825,27 @@ export default function CohortDetailClient({ cohort, initialSessions, transcript
                               </div>
                             </div>
 
+                            <div className="grid grid-cols-1 gap-4 pb-4 border-b border-slate-100">
+                              <div className="space-y-2">
+                                <label className="block text-[10px] font-black text-amber-600 uppercase tracking-widest">Assign Graded Quiz</label>
+                                <select 
+                                  className="w-full bg-amber-50 border border-amber-100 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-amber-500/20 outline-none transition-all font-medium text-amber-900"
+                                  onChange={(e) => {
+                                    if (e.target.value) {
+                                      handleAssignTest(session.id, e.target.value)
+                                      e.target.value = ''
+                                    }
+                                  }}
+                                  defaultValue=""
+                                >
+                                  <option value="" disabled>Select from Tests...</option>
+                                  {tests.map(t => (
+                                    <option key={t.id} value={t.id}>{t.name}</option>
+                                  ))}
+                                </select>
+                              </div>
+                            </div>
+
                             {/* Resource Table for Session */}
                             <div className="space-y-2 pt-2">
                               {resources.filter(r => r.session_id === session.id).length === 0 ? (
@@ -800,10 +857,12 @@ export default function CohortDetailClient({ cohort, initialSessions, transcript
                                       <div className={`p-1.5 rounded-lg ${
                                         res.type === 'video' ? 'bg-purple-100 text-purple-600' : 
                                         res.type === 'practice' ? 'bg-emerald-100 text-emerald-600' :
+                                        res.type === 'test' ? 'bg-amber-100 text-amber-600' :
                                         'bg-blue-100 text-blue-600'
                                       }`}>
                                         {res.type === 'video' ? <FilmIcon className="w-4 h-4" /> : 
                                          res.type === 'practice' ? <AcademicCapIcon className="w-4 h-4" /> :
+                                         res.type === 'test' ? <ClipboardDocumentCheckIcon className="w-4 h-4" /> :
                                          res.type === 'document' ? <DocumentTextIcon className="w-4 h-4" /> : 
                                          <LinkIcon className="w-4 h-4" />}
                                       </div>

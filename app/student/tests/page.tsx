@@ -1,7 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import TestCodeEntry from '@/components/student/TestCodeEntry'
 
 export const metadata = { title: 'My Quizzes | Training Portal' }
 
@@ -26,15 +25,9 @@ export default async function StudentQuizzesPage() {
         <div>
           <h1 className="text-4xl font-extrabold text-[#003B71] tracking-tight">My Quizzes</h1>
           <p className="text-lg text-slate-500 mt-3 font-medium">
-            Take a new quiz with an access code or review your past performance.
+            Review your past performance and track your progress over time.
           </p>
         </div>
-      </div>
-
-      {/* Quiz Access Code Entry */}
-      <div className="bg-white border border-slate-200 rounded-3xl p-8 shadow-sm">
-        <h2 className="text-xl font-bold text-slate-900 mb-6">Enter Quiz Code</h2>
-        <TestCodeEntry />
       </div>
 
       <div>

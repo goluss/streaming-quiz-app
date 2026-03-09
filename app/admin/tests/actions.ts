@@ -3,29 +3,16 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 
-// Generate random 6-character alphanumeric code
-function generateCode() {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
-  let code = ''
-  for (let i = 0; i < 6; i++) {
-    code += chars.charAt(Math.floor(Math.random() * chars.length))
-  }
-  return code
-}
-
 export async function createQuizSecurely(name: string, cohortId: string, selectedQuestionIds: string[]) {
   const supabase = await createClient()
 
   try {
     const { data: { user } } = await supabase.auth.getUser()
     
-    const code = generateCode()
-
     const { data: test, error: testError } = await supabase
       .from('tests')
       .insert({
         name: name.trim(),
-        code,
         cohort_id: cohortId || null,
         created_by: user?.id
       })
@@ -71,7 +58,7 @@ export async function createQuizSecurely(name: string, cohortId: string, selecte
     }
 
     revalidatePath('/admin/tests')
-    return { success: true, code, test: fullTest }
+    return { success: true, test: fullTest }
   } catch (error: any) {
     console.error("Unexpected error in createQuizSecurely:", error)
     return { success: false, error: error.message || 'An unexpected error occurred.' }

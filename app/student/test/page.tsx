@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
+import Link from 'next/link'
 import TestClient from '@/components/student/TestClient'
 
 export const metadata = { title: 'Take Assessment | Training Portal' }
@@ -19,24 +20,44 @@ export default async function TestPage({
 
   const resolvedParams = await searchParams
   const codeParam = resolvedParams.code
+  const idParam = resolvedParams.id
 
   const code = typeof codeParam === 'string' ? codeParam.toUpperCase() : null
-  if (!code || code.length !== 6) {
-    return <div className="p-8 text-center text-red-400">Error: Invalid or missing quiz code in URL.</div>
+  const testId = typeof idParam === 'string' ? idParam : null
+
+  if (!code && !testId) {
+    return <div className="p-8 text-center text-red-400">Error: Missing quiz identification (ID or Code).</div>
   }
 
   // Fetch the test and profile
+  let query = supabase.from('tests').select('id, transcript_id, name').eq('is_active', true)
+  
+  if (testId) {
+    query = query.eq('id', testId)
+  } else {
+    query = query.eq('code', code!)
+  }
+
   const [{ data: profile }, { data: test, error: testError }] = await Promise.all([
     supabase.from('profiles').select('full_name').eq('id', user.id).single(),
-    supabase.from('tests').select('id, transcript_id, name').eq('code', code).eq('is_active', true).single(),
+    query.single(),
   ])
 
   if (!test) {
     return (
-      <div className="p-8 text-center">
-        <h2 className="text-xl text-red-400 font-bold mb-2">Quiz Not Found</h2>
-        <p className="text-slate-400 mb-4">Code {code} is invalid or inactive.</p>
-        <p className="text-xs text-slate-500 max-w-md mx-auto">{testError?.message}</p>
+      <div className="p-8 text-center bg-white border border-slate-200 rounded-3xl shadow-sm max-w-2xl mx-auto my-12">
+        <div className="w-16 h-16 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-8 h-8">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+          </svg>
+        </div>
+        <h2 className="text-2xl font-extrabold text-slate-900 mb-2">Quiz Not Available</h2>
+        <p className="text-slate-500 mb-8 font-medium">
+          The quiz you are looking for is either inactive or does not exist.
+        </p>
+        <Link href="/student" className="inline-flex items-center gap-2 px-6 py-3 bg-[#003B71] text-white font-bold rounded-xl hover:bg-[#00264d] transition-all shadow-lg shadow-[#003B71]/20">
+          Back to Dashboard
+        </Link>
       </div>
     )
   }

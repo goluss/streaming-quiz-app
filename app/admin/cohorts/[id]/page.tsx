@@ -34,7 +34,8 @@ export default async function CohortDetailPage({ params }: { params: Promise<{ i
     { data: initialSessions }, 
     { data: transcripts }, 
     { data: globalResources }, 
-    { data: initialStudents }
+    { data: initialStudents },
+    { data: tests }
   ] = await Promise.all([
     supabase
       .from('cohort_sessions')
@@ -64,6 +65,11 @@ export default async function CohortDetailPage({ params }: { params: Promise<{ i
       .eq('student_cohorts.cohort_id', id)
       .eq('role', 'student')
       .order('full_name', { ascending: true }),
+    supabase
+      .from('tests')
+      .select('id, name')
+      .eq('is_active', true)
+      .order('name', { ascending: true }),
   ])
 
   // Map students (they are already flat profiles because we queried the profiles table)
@@ -84,6 +90,7 @@ export default async function CohortDetailPage({ params }: { params: Promise<{ i
         transcripts={transcripts ?? []}
         globalResources={globalResources ?? []}
         students={students ?? []}
+        tests={tests ?? []}
       />
     </div>
   )

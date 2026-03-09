@@ -19,7 +19,7 @@ interface Test {
   id: string
   transcript_id: string
   name: string
-  code: string
+  code?: string | null
   is_active: boolean
   cohort_id: string | null
   created_at: string
@@ -33,16 +33,6 @@ interface Props {
   transcripts: Transcript[]
   cohorts: Cohort[]
   allQuestions: { id: string, question_text: string, transcript_id: string }[]
-}
-
-// Generate random 6-character alphanumeric code
-function generateCode() {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789' // removed similar looking chars (1, I, O, 0)
-  let code = ''
-  for (let i = 0; i < 6; i++) {
-    code += chars.charAt(Math.floor(Math.random() * chars.length))
-  }
-  return code
 }
 
 export default function TestsClient({ tests: initialTests, transcripts, cohorts, allQuestions }: Props) {
@@ -79,12 +69,12 @@ export default function TestsClient({ tests: initialTests, transcripts, cohorts,
         return
       }
 
-      setTests([result.test, ...tests])
+      setTests([result.test as Test, ...tests])
       setName('')
       setCohortId('')
       setSelectedQuestionIds([])
       setShowForm(false)
-      setMessage({ type: 'success', text: `Quiz created! Code: ${result.code}` })
+      setMessage({ type: 'success', text: `Quiz "${name}" created successfully!` })
     } catch (error: any) {
       setMessage({ type: 'error', text: error?.message || 'A catastrophic error occurred on the frontend.' })
     } finally {
@@ -112,8 +102,8 @@ export default function TestsClient({ tests: initialTests, transcripts, cohorts,
     }
   }
 
-  const handleDelete = async (id: string, code: string) => {
-    if (!confirm(`Delete quiz ${code}? Students will no longer be able to take it.`)) return
+  const handleDelete = async (id: string, testName: string) => {
+    if (!confirm(`Delete quiz "${testName}"? Students will no longer be able to take it.`)) return
 
     setLoading(true)
     setMessage(null)
@@ -124,7 +114,7 @@ export default function TestsClient({ tests: initialTests, transcripts, cohorts,
 
       if (result.success) {
         setTests((prev) => prev.filter((t) => t.id !== id))
-        setMessage({ type: 'success', text: `Quiz ${code} deleted.` })
+        setMessage({ type: 'success', text: `Quiz "${testName}" deleted.` })
       } else {
         setMessage({ type: 'error', text: result.error || 'Failed to delete quiz.' })
       }
@@ -133,12 +123,6 @@ export default function TestsClient({ tests: initialTests, transcripts, cohorts,
     } finally {
       setLoading(false)
     }
-  }
-
-  const copyCode = (code: string) => {
-    navigator.clipboard.writeText(code)
-    setMessage({ type: 'success', text: `Code ${code} copied to clipboard!` })
-    setTimeout(() => setMessage(null), 3000)
   }
 
   return (
@@ -258,7 +242,7 @@ export default function TestsClient({ tests: initialTests, transcripts, cohorts,
               </div>
               <div className="flex items-center gap-2 mt-4 p-3 bg-amber-50 border border-amber-100 rounded-xl">
                 <svg className="w-4 h-4 text-amber-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 <p className="text-[10px] text-amber-700 font-bold uppercase tracking-tight">
                   Remember: Students will see 5 random questions from this pool for their quiz.
@@ -283,7 +267,7 @@ export default function TestsClient({ tests: initialTests, transcripts, cohorts,
       {tests.length === 0 ? (
         <div className="text-center py-24 text-slate-500 border border-slate-800 border-dashed rounded-2xl">
           <p className="font-medium">No active quizzes</p>
-          <p className="text-sm mt-1">Create one to get a 6-digit access code for students.</p>
+          <p className="text-sm mt-1">Create one and assign it to a cohort session.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4">
@@ -319,32 +303,9 @@ export default function TestsClient({ tests: initialTests, transcripts, cohorts,
                   <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Quiz Length</span>
                   <span className="text-sm font-bold text-emerald-700">5 Questions</span>
                 </div>
-                <button 
-                  onClick={() => {
-                    // Redirect to analytics or detail
-                  }}
-                  className="ml-2 p-2 text-slate-400 hover:text-[#003B71] hover:bg-white rounded-lg transition-all"
-                  title="Manage Questions"
-                >
-                  <PlusIcon className="w-4 h-4" />
-                </button>
               </div>
               
               <div className="flex items-center gap-8 shrink-0">
-                <div className="flex flex-col items-end">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Access Code</span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xl font-mono font-black text-[#003B71] tracking-widest">{t.code}</span>
-                    <button
-                      onClick={() => copyCode(t.code)}
-                      className="p-1.5 text-slate-300 hover:text-[#003B71] transition-colors"
-                      title="Copy Code"
-                    >
-                      <ClipboardDocumentIcon className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-
                 <div className="flex items-center gap-2 border-l border-slate-100 pl-6">
                   <Link
                     href={`/admin/tests/${t.id}`}
@@ -354,7 +315,7 @@ export default function TestsClient({ tests: initialTests, transcripts, cohorts,
                     <ChartBarIcon className="w-5 h-5" />
                   </Link>
                   <button
-                    onClick={() => handleDelete(t.id, t.code)}
+                    onClick={() => handleDelete(t.id, t.name)}
                     className="p-2.5 bg-white text-slate-400 hover:text-red-500 hover:bg-red-50 border border-slate-100 rounded-xl transition-all shadow-sm"
                     title="Delete Quiz"
                   >
