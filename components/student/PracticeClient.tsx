@@ -39,7 +39,7 @@ export default function PracticeClient({ questions, transcriptTitle, transcriptI
   const totalQuestions = randomizedTest.length
   const progress = ((currentIdx + 1) / totalQuestions) * 100
   const userChoice = responses[currentQuestion?.id]
-  const isCorrect = userChoice === currentQuestion?.correct_answer
+  const isCorrect = userChoice === currentQuestion?.shuffled_correct_answer
 
   const handleOptionClick = (label: 'A' | 'B' | 'C' | 'D') => {
     if (showFeedback) return // Prevent changing answer after feedback
@@ -67,7 +67,7 @@ export default function PracticeClient({ questions, transcriptTitle, transcriptI
     
     const correctCount = Object.keys(responses).filter(id => {
       const q = randomizedTest.find(rq => rq.id === id)
-      return q && responses[id] === q.correct_answer
+      return q && responses[id] === q.shuffled_correct_answer
     }).length
     
     const total = randomizedTest.length
@@ -77,8 +77,8 @@ export default function PracticeClient({ questions, transcriptTitle, transcriptI
     const answersProvided = randomizedTest.map(q => ({
       question_id: q.id,
       chosen_answer: responses[q.id] ?? '',
-      correct_answer: q.correct_answer,
-      is_correct: responses[q.id] === q.correct_answer
+      correct_answer: q.shuffled_correct_answer,
+      is_correct: responses[q.id] === q.shuffled_correct_answer
     }))
 
     await submitTestAttempt({
@@ -167,7 +167,7 @@ export default function PracticeClient({ questions, transcriptTitle, transcriptI
       <div className="grid grid-cols-1 gap-4">
         {currentQuestion.shuffled_options.map((option) => {
           const isSelected = userChoice === option.label
-          const isCorrectAnswer = option.label === currentQuestion.correct_answer
+          const isCorrectAnswer = option.label === currentQuestion.shuffled_correct_answer
           
           let stateStyles = "bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50 shadow-sm"
           
@@ -226,14 +226,16 @@ export default function PracticeClient({ questions, transcriptTitle, transcriptI
               {isCorrect ? <CheckCircleIcon className="w-8 h-8 stroke-[2.5]" /> : <XCircleIcon className="w-8 h-8 stroke-[2.5]" />}
             </div>
             <div className="flex-1">
-              <h4 className={`text-xl font-black tracking-tight ${isCorrect ? 'text-emerald-800' : 'text-red-800'}`}>
-                {isCorrect ? 'That is Correct' : 'Not quite right'}
-              </h4>
-              <p className={`text-sm md:text-base font-medium mt-2 leading-relaxed ${isCorrect ? 'text-emerald-700/80' : 'text-red-700/80'}`}>
-                {isCorrect 
-                  ? "Excellent work. You've correctly identified the concept from the training material." 
-                  : `The correct answer was ${currentQuestion.correct_answer}. Use this as a learning opportunity for the final assessment.`}
-              </p>
+              {isCorrect ? null : (
+                <>
+                  <h4 className="text-xl font-black tracking-tight text-red-800">
+                    Not quite right
+                  </h4>
+                  <p className="text-sm md:text-base font-medium mt-2 leading-relaxed text-red-700/80">
+                    The correct answer was {currentQuestion.shuffled_correct_answer}. Use this as a learning opportunity for the final assessment.
+                  </p>
+                </>
+              )}
             </div>
           </div>
         </div>

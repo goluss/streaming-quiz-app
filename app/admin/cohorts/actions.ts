@@ -84,3 +84,58 @@ export async function assignPractice(params: {
     return { success: false, error: error.message || 'An unexpected error occurred.' }
   }
 }
+
+export async function renameSession(params: {
+  cohortId: string
+  sessionId: string
+  newTitle: string
+}) {
+  const supabase = await createClient()
+
+  try {
+    const { data, error } = await supabase
+      .from('cohort_sessions')
+      .update({ title: params.newTitle })
+      .eq('id', params.sessionId)
+      .eq('cohort_id', params.cohortId) // Ensure it belongs to the cohort
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Database Error in renameSession:', error)
+      return { success: false, error: error.message }
+    }
+
+    revalidatePath(`/admin/cohorts/${params.cohortId}`)
+    return { success: true, data }
+  } catch (error: any) {
+    console.error('Unexpected error in renameSession:', error)
+    return { success: false, error: error.message || 'An unexpected error occurred.' }
+  }
+}
+
+export async function removeResource(params: {
+  cohortId: string
+  resourceId: string
+}) {
+  const supabase = await createClient()
+
+  try {
+    const { error } = await supabase
+      .from('cohort_resources')
+      .delete()
+      .eq('id', params.resourceId)
+      .eq('cohort_id', params.cohortId) // Ensure it belongs to the cohort to prevent cross-cohort deletions
+
+    if (error) {
+      console.error('Database Error in removeResource:', error)
+      return { success: false, error: error.message }
+    }
+
+    revalidatePath(`/admin/cohorts/${params.cohortId}`)
+    return { success: true }
+  } catch (error: any) {
+    console.error('Unexpected error in removeResource:', error)
+    return { success: false, error: error.message || 'An unexpected error occurred.' }
+  }
+}

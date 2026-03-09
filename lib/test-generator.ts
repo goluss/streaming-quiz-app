@@ -48,25 +48,28 @@ function shuffle<T>(array: T[]): T[] {
  * Shuffle the options within a question and re-map the correct answer label.
  */
 function shuffleQuestionOptions(question: Question): RandomizedQuestion {
-  const shuffled = shuffle([...question.options])
-
-  // Find which new label corresponds to the original correct answer text
-  const correctOptionText = question.options.find(
+  // 1. Identify the original correct option object by its label
+  const originalCorrectOption = question.options.find(
     (o) => o.label === question.correct_answer
-  )?.text
+  )
 
-  const newCorrectLabel = shuffled.find((o) => o.text === correctOptionText)
-    ?.label ?? question.correct_answer
+  // 2. Create a shallow copy of the options array to shuffle
+  const optionsToShuffle = [...question.options]
+  const shuffled = shuffle(optionsToShuffle)
 
-  // Re-label options A, B, C, D in their new shuffled positions
+  // 3. Map to new A, B, C, D labels in the shuffled order
   const relabeled = shuffled.map((o, i) => ({
     ...o,
     label: (['A', 'B', 'C', 'D'] as const)[i],
   }))
 
-  const newCorrectRelabeled = relabeled.find(
-    (o) => o.text === correctOptionText
-  )?.label ?? question.correct_answer
+  // 4. Find the index where our original correct option ended up after the shuffle
+  const newIndex = originalCorrectOption ? shuffled.indexOf(originalCorrectOption) : -1
+  
+  // 5. Map that index back to its new label (A, B, C, D)
+  const newCorrectRelabeled = newIndex !== -1 
+    ? (['A', 'B', 'C', 'D'] as const)[newIndex] 
+    : question.correct_answer
 
   return {
     ...question,

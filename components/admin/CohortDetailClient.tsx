@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { ArrowDownTrayIcon, UserPlusIcon, CheckCircleIcon, XMarkIcon, ChartPieIcon, TableCellsIcon, LinkIcon, PlusIcon, TrashIcon, CloudArrowUpIcon, PaperClipIcon, FilmIcon, DocumentTextIcon, ChevronDownIcon, ChevronUpIcon, TrophyIcon, PencilIcon, CheckIcon, AcademicCapIcon, UserGroupIcon } from '@heroicons/react/24/outline'
-import { assignResource, assignPractice } from '../../app/admin/cohorts/actions'
+import { assignResource, assignPractice, renameSession, removeResource } from '../../app/admin/cohorts/actions'
 
 interface Profile {
   id: string
@@ -82,7 +82,9 @@ export default function CohortDetailClient({ cohort, initialSessions, transcript
   const [newSessionDesc, setNewSessionDesc] = useState('')
   const [creatingSession, setCreatingSession] = useState(false)
   const [expandedSessionId, setExpandedSessionId] = useState<string | null>(null)
-  
+  const [editingSessionId, setEditingSessionId] = useState<string | null>(null)
+  const [editSessionTitle, setEditSessionTitle] = useState('')
+  const [savingSession, setSavingSession] = useState(false)
   const [cohortName, setCohortName] = useState(cohort.name)
   const [isEditingName, setIsEditingName] = useState(false)
   const [savingName, setSavingName] = useState(false)
@@ -221,6 +223,28 @@ export default function CohortDetailClient({ cohort, initialSessions, transcript
     }
   }
 
+  const handleRenameSession = async (sessionId: string) => {
+    if (!editSessionTitle.trim() || editSessionTitle.trim() === sessions.find(s => s.id === sessionId)?.title) {
+      setEditingSessionId(null)
+      return
+    }
+    setSavingSession(true)
+    const result = await renameSession({
+      cohortId: cohort.id,
+      sessionId,
+      newTitle: editSessionTitle.trim()
+    })
+
+    if (result.success && result.data) {
+      const updatedSession = result.data as CohortSession
+      setSessions(sessions.map(s => s.id === sessionId ? { ...s, title: updatedSession.title } : s))
+    } else {
+      alert(`Failed to rename session: ${result.error}`)
+    }
+    setSavingSession(false)
+    setEditingSessionId(null)
+  }
+
   const handleAssignResource = async (sessionId: string, resourceId: string) => {
     const resource = globalResources.find(r => r.id === resourceId)
     if (!resource) {
@@ -289,14 +313,21 @@ export default function CohortDetailClient({ cohort, initialSessions, transcript
 
   const handleDeleteResource = async (resourceId: string) => {
     if (!window.confirm('Remove this resource from the session?')) return
-    const { error } = await supabase
-      .from('cohort_resources')
-      .delete()
-      .eq('id', resourceId)
+    
+    // Prevent multiple clicks while deleting
+    setLoadingResources(true)
+    
+    const result = await removeResource({
+      cohortId: cohort.id,
+      resourceId
+    })
 
-    if (!error) {
-      setResources(resources.filter(r => r.id !== resourceId))
+    if (result.success) {
+      setResources(prev => prev.filter(r => r.id !== resourceId))
+    } else {
+      alert(`Failed to remove resource: ${result.error}`)
     }
+    setLoadingResources(false)
   }
 
   const downloadCSV = () => {
@@ -634,13 +665,44 @@ export default function CohortDetailClient({ cohort, initialSessions, transcript
                           className="p-5 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors"
                           onClick={() => setExpandedSessionId(expandedSessionId === session.id ? null : session.id)}
                         >
-                          <div className="flex items-center gap-4">
-                            <div className="w-8 h-8 rounded-lg bg-[#003B71]/5 flex items-center justify-center">
+                          <div className="flex items-center gap-4 w-full">
+                            <div className="w-8 h-8 rounded-lg bg-[#003B71]/5 flex items-center justify-center shrink-0">
                               <span className="text-xs font-black text-[#003B71]">{String(idx + 1).padStart(2, '0')}</span>
                             </div>
-                            <div>
-                               <h5 className="font-extrabold text-slate-900">{session.title}</h5>
-                               {session.description && <p className="text-xs text-slate-400 font-medium">{session.description}</p>}
+                            <div className="flex-1 min-w-0">
+                              {editingSessionId === session.id ? (
+                                <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                                  <input
+                                    type="text"
+                                    value={editSessionTitle}
+                                    onChange={(e) => setEditSessionTitle(e.target.value)}
+                                    autoFocus
+                                    className="text-sm font-bold text-slate-900 bg-white border border-slate-300 rounded px-2 py-1.5 focus:outline-none focus:border-[#003B71] w-full max-w-sm"
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') handleRenameSession(session.id)
+                                      if (e.key === 'Escape') setEditingSessionId(null)
+                                    }}
+                                  />
+                                  <button onClick={() => handleRenameSession(session.id)} disabled={savingSession} className="p-1.5 bg-emerald-600 text-white rounded-md hover:bg-emerald-500 transition-colors shadow-sm disabled:opacity-50">
+                                    {savingSession ? <div className="w-4 h-4 border border-white border-t-transparent rounded-full animate-spin" /> : <CheckIcon className="w-4 h-4" />}
+                                  </button>
+                                  <button onClick={() => setEditingSessionId(null)} disabled={savingSession} className="p-1.5 bg-slate-100 text-slate-500 rounded-md hover:bg-slate-200 transition-colors disabled:opacity-50">
+                                    <XMarkIcon className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              ) : (
+                                <div className="group/session flex items-center gap-2 mt-0.5">
+                                  <h5 className="font-extrabold text-slate-900 leading-tight truncate">{session.title}</h5>
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); setEditingSessionId(session.id); setEditSessionTitle(session.title); }}
+                                    className="p-1 text-slate-300 hover:text-[#003B71] opacity-0 group-hover/session:opacity-100 transition-opacity"
+                                    title="Rename Session"
+                                  >
+                                    <PencilIcon className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              )}
+                               {session.description && <p className="text-xs text-slate-400 font-medium mt-0.5 truncate">{session.description}</p>}
                             </div>
                           </div>
                           <div className="flex items-center gap-3">

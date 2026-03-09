@@ -99,3 +99,25 @@ export async function deleteQuiz(id: string) {
     return { success: false, error: error.message || 'An unexpected error occurred.' }
   }
 }
+
+export async function deleteTestAttempt(id: string, testId: string) {
+  const supabase = await createClient()
+
+  try {
+    const { error } = await supabase
+      .from('test_attempts')
+      .delete()
+      .eq('id', id)
+
+    if (error) {
+      console.error("Test Attempt Deletion Error:", error)
+      return { success: false, error: error.message || 'Failed to delete test attempt.' }
+    }
+
+    revalidatePath(`/admin/tests/${testId}`)
+    return { success: true }
+  } catch (error: any) {
+    console.error("Unexpected error in deleteTestAttempt:", error)
+    return { success: false, error: error.message || 'An unexpected error occurred.' }
+  }
+}

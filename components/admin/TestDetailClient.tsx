@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { ArrowLeftIcon, ArrowsUpDownIcon } from '@heroicons/react/24/outline'
+import { ArrowLeftIcon, ArrowsUpDownIcon, TrashIcon } from '@heroicons/react/24/outline'
+import { deleteTestAttempt } from '@/app/admin/tests/actions'
 
 interface StudentAttempt {
   id: string
@@ -63,6 +64,19 @@ export default function TestDetailClient({ test, attempts, questionStats }: Prop
   const [sortKey, setSortKey] = useState<SortKey>('pct')
   const [sortDir, setSortDir] = useState<SortDir>('asc')
 
+  const [localAttempts, setLocalAttempts] = useState(attempts)
+
+  const handleDeleteAttempt = async (attemptId: string) => {
+    if (!window.confirm('Are you sure you want to delete this score? This cannot be undone.')) return
+    
+    const result = await deleteTestAttempt(attemptId, test.id)
+    if (result.success) {
+      setLocalAttempts(prev => prev.filter(a => a.id !== attemptId))
+    } else {
+      alert(`Failed to delete score: ${result.error}`)
+    }
+  }
+
   const handleSort = (key: SortKey) => {
     if (sortKey === key) {
       setSortDir(d => d === 'asc' ? 'desc' : 'asc')
@@ -75,13 +89,13 @@ export default function TestDetailClient({ test, attempts, questionStats }: Prop
   // Build histogram
   const bucketCounts = BUCKETS.map(b => ({
     ...b,
-    count: attempts.filter(a => a.score >= b.min && a.score < b.max).length
+    count: localAttempts.filter(a => a.score >= b.min && a.score < b.max).length
   }))
   const maxBucketCount = Math.max(...bucketCounts.map(b => b.count), 1)
 
   // Average score
-  const avgScore = attempts.length > 0
-    ? Math.round(attempts.reduce((sum, a) => sum + a.score, 0) / attempts.length)
+  const avgScore = localAttempts.length > 0
+    ? Math.round(localAttempts.reduce((sum, a) => sum + a.score, 0) / localAttempts.length)
     : null
 
   // Sort question stats
@@ -141,7 +155,7 @@ export default function TestDetailClient({ test, attempts, questionStats }: Prop
           </div>
           <div className="flex items-center gap-6 text-center">
             <div className="bg-white border border-slate-200 rounded-xl px-6 py-4 shadow-sm">
-              <p className="text-3xl font-black text-slate-900">{attempts.length}</p>
+              <p className="text-3xl font-black text-slate-900">{localAttempts.length}</p>
               <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-0.5">Attempts</p>
             </div>
             {avgScore !== null && (
@@ -154,7 +168,7 @@ export default function TestDetailClient({ test, attempts, questionStats }: Prop
         </div>
       </div>
 
-      {attempts.length === 0 ? (
+      {localAttempts.length === 0 ? (
         <div className="text-center py-24 bg-white border border-dashed border-slate-200 rounded-2xl">
           <p className="font-bold text-slate-400 uppercase tracking-widest text-xs">No attempts yet</p>
         </div>
@@ -225,7 +239,7 @@ export default function TestDetailClient({ test, attempts, questionStats }: Prop
             <div className="px-8 py-5 border-b border-slate-100 bg-slate-50">
               <h2 className="text-lg font-bold text-slate-900">Student Scores</h2>
               <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mt-0.5">
-                {attempts.length} student{attempts.length !== 1 ? 's' : ''} attempted
+                {localAttempts.length} student{localAttempts.length !== 1 ? 's' : ''} attempted
               </p>
             </div>
             <div className="overflow-x-auto">
@@ -236,10 +250,11 @@ export default function TestDetailClient({ test, attempts, questionStats }: Prop
                     <th className="px-6 py-3 text-[10px] font-extrabold text-slate-400 uppercase tracking-widest text-center">Score %</th>
                     <th className="px-6 py-3 text-[10px] font-extrabold text-slate-400 uppercase tracking-widest text-center">Correct</th>
                     <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Date</th>
+                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50">
-                  {attempts
+                  {localAttempts
                     .sort((a, b) => b.score - a.score)
                     .map(a => (
                       <tr key={a.id} className="hover:bg-slate-50/50 transition-colors">
@@ -261,8 +276,17 @@ export default function TestDetailClient({ test, attempts, questionStats }: Prop
                         <td className="px-6 py-4 text-slate-600 font-medium">
                           {a.correct_count} / {a.total_questions}
                         </td>
-                        <td className="px-6 py-4 text-slate-400 text-xs font-medium">
+                        <td className="px-6 py-4 text-slate-400 text-xs font-medium text-right">
                           {new Date(a.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <button
+                            onClick={() => handleDeleteAttempt(a.id)}
+                            className="p-1.5 text-slate-300 hover:text-red-500 transition-colors"
+                            title="Delete attempt"
+                          >
+                            <TrashIcon className="w-4 h-4" />
+                          </button>
                         </td>
                       </tr>
                     ))}

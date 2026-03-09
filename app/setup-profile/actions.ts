@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@supabase/supabase-js'
+import { cookies } from 'next/headers'
 
 export async function joinCohortSecurely(userId: string, targetCohortId?: string | null, inviteCode?: string): Promise<{ success: boolean; error?: string }> {
   // Use service role key to securely bypass RLS and insert into student_cohorts junction table
@@ -45,7 +46,6 @@ export async function joinCohortSecurely(userId: string, targetCohortId?: string
 
   // Set the active cohort cookie so the dashboard immediately knows where to put them, preventing a redirect loop
   try {
-    const { cookies } = await import('next/headers')
     const cookieStore = await cookies()
     cookieStore.set('active_cohort_id', finalCohortId, {
       path: '/',

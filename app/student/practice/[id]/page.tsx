@@ -31,14 +31,28 @@ export default async function PracticePage({ params }: PageProps) {
 
   if (!transcript) redirect('/student')
 
-  // Fetch exactly 10 practice questions for this transcript in stable order
-  const { data: questions } = await supabase
+  // First, see if the admin explicitly flagged any questions as practice
+  let { data: questions } = await supabase
     .from('questions')
     .select('id, transcript_id, question_text, options, correct_answer, category')
     .eq('transcript_id', id)
     .eq('is_practice', true)
     .order('id', { ascending: true })
     .limit(10)
+
+  // If none are explicitly flagged, fall back to any available questions
+  // to prevent the empty state when admins simply assign a practice module
+  // without digging into individual question configurations.
+  if (!questions || questions.length === 0) {
+    const { data: fallback } = await supabase
+      .from('questions')
+      .select('id, transcript_id, question_text, options, correct_answer, category')
+      .eq('transcript_id', id)
+      .order('id', { ascending: true })
+      .limit(10)
+    
+    questions = fallback
+  }
 
   return (
     <div className="py-8 px-4 sm:px-6 lg:px-8">

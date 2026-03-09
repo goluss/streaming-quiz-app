@@ -11,10 +11,10 @@ interface Props {
 }
 
 export default function SetupProfileClient({ profile, email }: Props) {
-  const [firstName, setFirstName] = useState(profile?.first_name || '')
-  const [lastName, setLastName] = useState(profile?.last_name || '')
-  const [company, setCompany] = useState(profile?.company || '')
-  const [companyEmail, setCompanyEmail] = useState(profile?.company_email || '')
+  const [firstName, setFirstName] = useState(profile?.first_name ?? '')
+  const [lastName, setLastName] = useState(profile?.last_name ?? '')
+  const [company, setCompany] = useState(profile?.company ?? '')
+  const [companyEmail, setCompanyEmail] = useState(profile?.company_email ?? email ?? '')
   const [inviteCode, setInviteCode] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
