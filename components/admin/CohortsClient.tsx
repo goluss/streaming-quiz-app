@@ -11,7 +11,7 @@ interface Cohort {
   invite_code: string
   whiteboard_url?: string | null
   created_at: string
-  profiles?: [{ count: number }] | { count: number }
+  student_cohorts?: [{ count: number }] | { count: number }
 }
 
 interface Props {
@@ -62,8 +62,8 @@ export default function CohortsClient({ initialCohorts }: Props) {
     if (error) {
       setMessage({ type: 'error', text: error.message || 'Failed to create cohort' })
     } else {
-      // Initialize profiles count to 0 for UI purposes
-      setCohorts([{ ...data, profiles: { count: 0 } }, ...cohorts])
+      // Initialize student_cohorts count to 0 for UI purposes
+      setCohorts([{ ...data, student_cohorts: { count: 0 } }, ...cohorts])
       setName('')
       setShowForm(false)
       setMessage({ type: 'success', text: 'Cohort created successfully!' })
@@ -194,7 +194,7 @@ export default function CohortsClient({ initialCohorts }: Props) {
                     <UserGroupIcon className="w-4 h-4 text-indigo-600" />
                   </div>
                   <span className="text-xs font-bold text-slate-700">
-                    {getCount(cohort.profiles)} <span className="text-slate-400 font-medium">Students</span>
+                    {getCount(cohort.student_cohorts)} <span className="text-slate-400 font-medium">Students</span>
                   </span>
                 </div>
 

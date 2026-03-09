@@ -330,7 +330,24 @@ export default function CohortDetailClient({ cohort, initialSessions, transcript
     setLoadingResources(false)
   }
 
-  const downloadCSV = () => {
+  const handleDeleteAttempt = async (attemptId: string) => {
+    if (!window.confirm('Are you sure you want to delete this score? This cannot be undone.')) return
+    
+    // We can reuse the action from tests but we'll need to revalidate cohort too
+    // For now, let's just delete it via supabase directly for speed on this page or add a new action
+    const { error } = await supabase
+      .from('test_attempts')
+      .delete()
+      .eq('id', attemptId)
+
+    if (!error) {
+      setAnalytics(prev => prev.filter(a => a.id !== attemptId))
+    } else {
+      alert(`Failed to delete score: ${error.message}`)
+    }
+  }
+
+  const handleDownloadCSV = () => {
     if (analytics.length === 0) return
     const headers = ['Student Name', 'Student Email', 'Quiz Name', 'Source Module', 'Score (%)', 'Questions Correct', 'Total Questions', 'Date Taken']
     const rows = analytics.map(attempt => {
@@ -491,7 +508,7 @@ export default function CohortDetailClient({ cohort, initialSessions, transcript
             
             {activeTab === 'scores' && (
               <button
-                onClick={downloadCSV}
+                onClick={handleDownloadCSV}
                 disabled={loadingAnalytics || analytics.length === 0}
                 className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
               >
@@ -509,13 +526,14 @@ export default function CohortDetailClient({ cohort, initialSessions, transcript
                     <th className="px-5 py-4 font-bold tracking-wider">Student</th>
                     <th className="px-5 py-4 font-bold tracking-wider">Quiz</th>
                     <th className="px-5 py-4 font-bold tracking-wider text-right">Score</th>
+                    <th className="px-5 py-4 font-bold tracking-wider text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 bg-white">
                   {loadingAnalytics ? (
-                    <tr><td colSpan={3} className="px-5 py-12 text-center text-slate-500 italic">Loading scores...</td></tr>
+                    <tr><td colSpan={4} className="px-5 py-12 text-center text-slate-500 italic">Loading scores...</td></tr>
                   ) : analytics.length === 0 ? (
-                    <tr><td colSpan={3} className="px-5 py-12 text-center text-slate-500 italic">No quiz attempts found.</td></tr>
+                    <tr><td colSpan={4} className="px-5 py-12 text-center text-slate-500 italic">No quiz attempts found.</td></tr>
                   ) : (
                     analytics.map(attempt => {
                       const p = Array.isArray(attempt.profiles) ? attempt.profiles[0] : attempt.profiles
@@ -537,6 +555,15 @@ export default function CohortDetailClient({ cohort, initialSessions, transcript
                            <span className={`px-2 py-1 rounded-md text-xs font-black ${attempt.score >= 80 ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
                              {attempt.correct_count} / {attempt.total_questions}
                            </span>
+                          </td>
+                          <td className="px-5 py-4 text-right">
+                            <button
+                              onClick={() => handleDeleteAttempt(attempt.id)}
+                              className="p-1.5 text-slate-300 hover:text-red-500 transition-colors"
+                              title="Delete attempt"
+                            >
+                              <TrashIcon className="w-4 h-4" />
+                            </button>
                           </td>
                         </tr>
                       )
@@ -693,13 +720,13 @@ export default function CohortDetailClient({ cohort, initialSessions, transcript
                               ) : (
                                 <div className="group/session flex items-center gap-2 mt-0.5">
                                   <h5 className="font-extrabold text-slate-900 leading-tight truncate">{session.title}</h5>
-                                  <button
-                                    onClick={(e) => { e.stopPropagation(); setEditingSessionId(session.id); setEditSessionTitle(session.title); }}
-                                    className="p-1 text-slate-300 hover:text-[#003B71] opacity-0 group-hover/session:opacity-100 transition-opacity"
-                                    title="Rename Session"
-                                  >
-                                    <PencilIcon className="w-3.5 h-3.5" />
-                                  </button>
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); setEditingSessionId(session.id); setEditSessionTitle(session.title); }}
+                                      className="p-1 text-slate-300 hover:text-[#003B71] transition-opacity"
+                                      title="Rename Session"
+                                    >
+                                      <PencilIcon className="w-3.5 h-3.5" />
+                                    </button>
                                 </div>
                               )}
                                {session.description && <p className="text-xs text-slate-400 font-medium mt-0.5 truncate">{session.description}</p>}

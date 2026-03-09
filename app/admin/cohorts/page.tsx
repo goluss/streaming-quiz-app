@@ -27,7 +27,7 @@ export default async function CohortsPage() {
       invite_code,
       whiteboard_url,
       created_at,
-      profiles ( count )
+      student_cohorts ( count )
     `)
     .order('created_at', { ascending: false })
 

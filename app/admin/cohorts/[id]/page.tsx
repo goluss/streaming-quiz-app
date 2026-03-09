@@ -30,7 +30,12 @@ export default async function CohortDetailPage({ params }: { params: Promise<{ i
   if (!cohort) redirect('/admin/cohorts')
 
   // Fetch sessions, transcripts, global resources, and students
-  const [{ data: initialSessions }, { data: transcripts }, { data: globalResources }, { data: students }] = await Promise.all([
+  const [
+    { data: initialSessions }, 
+    { data: transcripts }, 
+    { data: globalResources }, 
+    { data: initialStudents }
+  ] = await Promise.all([
     supabase
       .from('cohort_sessions')
       .select('id, title, description, created_at')
@@ -46,11 +51,23 @@ export default async function CohortDetailPage({ params }: { params: Promise<{ i
       .order('title', { ascending: true }),
     supabase
       .from('profiles')
-      .select('id, full_name, email, created_at')
-      .eq('cohort_id', id)
+      .select(`
+        id,
+        full_name,
+        email,
+        created_at,
+        role,
+        student_cohorts!inner (
+          cohort_id
+        )
+      `)
+      .eq('student_cohorts.cohort_id', id)
       .eq('role', 'student')
       .order('full_name', { ascending: true }),
   ])
+
+  // Map students (they are already flat profiles because we queried the profiles table)
+  const students = initialStudents ?? []
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
