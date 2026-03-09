@@ -55,3 +55,12 @@ Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
 [Middleware] user found: false
  HEAD /login 200 in 28ms (compile: 4ms, proxy.ts: 8ms, render: 16ms)
 ✓ Compiled in 21ms
+ GET /student 200 in 461ms (compile: 11ms, proxy.ts: 124ms, render: 326ms)
+TypeError: fetch failed
+    at ignore-listed frames {
+  [cause]: AggregateError: 
+      at ignore-listed frames {
+    code: 'ENETUNREACH'
+  }
+}
+ GET /login 200 in 1176ms (compile: 299ms, proxy.ts: 743ms, render: 134ms)
