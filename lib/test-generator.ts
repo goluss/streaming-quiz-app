@@ -106,7 +106,7 @@ export function gradeTest(
       chosen_answer: chosen,
       correct_answer: q.shuffled_correct_answer,
       is_correct,
-      category: q.category,
+      category: q.category ?? null,
     }
   })
 

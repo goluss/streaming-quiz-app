@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import { cookies } from 'next/headers'
 import TestClient from '@/components/student/TestClient'
 
 export const metadata = { title: 'Take Assessment | Training Portal' }
@@ -12,6 +13,9 @@ export default async function TestPage({
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
+
+  const cookieStore = await cookies()
+  const activeCohortId = cookieStore.get('active_cohort_id')?.value || null
 
   const resolvedParams = await searchParams
   const codeParam = resolvedParams.code
@@ -96,6 +100,7 @@ export default async function TestPage({
         questions={questions as Parameters<typeof TestClient>[0]['questions']}
         testId={test.id}
         transcriptId={test.transcript_id}
+        cohortId={activeCohortId}
         user={{ id: user.id, email: user.email!, name: profile?.full_name }}
         fixedCount={5}
       />

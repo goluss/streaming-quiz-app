@@ -14,12 +14,15 @@ export async function assignResource(params: {
 }) {
   const supabase = await createClient()
 
+  // Convert empty string to null to avoid UUID validation errors
+  const sessionId = params.sessionId === '' ? null : (params.sessionId || null)
+
   try {
     const { data, error } = await supabase
       .from('cohort_resources')
       .insert({
         cohort_id: params.cohortId,
-        session_id: params.sessionId || null,
+        session_id: sessionId,
         title: params.title,
         url: params.url,
         type: params.type,
@@ -44,19 +47,22 @@ export async function assignResource(params: {
 
 export async function assignPractice(params: {
   cohortId: string
-  sessionId: string
+  sessionId?: string | null
   transcriptId: string
   title: string
   sectionTitle?: string | null
 }) {
   const supabase = await createClient()
 
+  // Convert empty string to null to avoid UUID validation errors
+  const sessionId = params.sessionId === '' ? null : (params.sessionId || null)
+
   try {
     const { data, error } = await supabase
       .from('cohort_resources')
       .insert({
         cohort_id: params.cohortId,
-        session_id: params.sessionId,
+        session_id: sessionId,
         title: params.title,
         url: '#', // Placeholder for practice
         type: 'practice',

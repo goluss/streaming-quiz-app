@@ -17,13 +17,14 @@ interface Props {
   }[]
   testId: string
   transcriptId: string | null
+  cohortId: string | null
   user: { id: string; email: string; name?: string | null }
   fixedCount?: number
 }
 
 import { verifyTestCode, submitTestAttempt } from '@/app/student/tests/actions'
 
-export default function TestClient({ questions, testId, transcriptId, user, fixedCount }: Props) {
+export default function TestClient({ questions, testId, transcriptId, cohortId, user, fixedCount }: Props) {
   const [randomizedTest, setRandomizedTest] = useState<RandomizedQuestion[]>([])
   const [isMounted, setIsMounted] = useState(false)
   const [currentIdx, setCurrentIdx] = useState(0)
@@ -66,6 +67,7 @@ export default function TestClient({ questions, testId, transcriptId, user, fixe
     const response = await submitTestAttempt({
       testId,
       transcriptId,
+      cohortId,
       score: result.score,
       totalQuestions: result.total_questions,
       correctCount: result.correct_count,

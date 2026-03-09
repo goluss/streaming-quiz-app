@@ -15,6 +15,8 @@ import {
   GlobeAltIcon,
   CheckCircleIcon
 } from '@heroicons/react/24/outline'
+import { assignResource, assignPractice } from '../../app/admin/cohorts/actions'
+
 
 interface Transcript {
   id: string
@@ -98,6 +100,27 @@ export default function ResourceLibraryClient({ initialTranscripts, initialGloba
     if (error) { alert('Failed to update: ' + error.message); fetchQuestions(selectedTranscript!); }
   }
 
+  const handleBulkToggle = async (field: 'is_test' | 'is_practice', value: boolean) => {
+    if (!selectedTranscript || questions.length === 0) return
+    if (!confirm(`Mark all ${questions.length} questions as ${field === 'is_test' ? 'Quiz' : 'Practice'} = ${value}?`)) return
+    
+    setAssigningLoading(true)
+    try {
+      const { error } = await supabase
+        .from('questions')
+        .update({ [field]: value })
+        .eq('transcript_id', selectedTranscript.id)
+
+      if (error) throw error
+      
+      setQuestions(questions.map(q => ({ ...q, [field]: value })))
+    } catch (err: any) {
+      alert('Bulk update failed: ' + err.message)
+    } finally {
+      setAssigningLoading(false)
+    }
+  }
+
   // --- GLOBAL MATERIAL ACTIONS ---
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -169,12 +192,10 @@ export default function ResourceLibraryClient({ initialTranscripts, initialGloba
     setAssigningLoading(true)
 
     try {
-      const { assignResource, assignPractice } = await import('../../app/admin/cohorts/actions')
-      
       if (activeTab === 'transcripts' && selectedTranscript) {
         const result = await assignPractice({
           cohortId: targetCohortId,
-          sessionId: targetSessionId,
+          sessionId: targetSessionId || null,
           transcriptId: selectedTranscript.id,
           title: `Practice: ${selectedTranscript.title}`,
           sectionTitle: sectionTitle.trim() || null
@@ -183,7 +204,7 @@ export default function ResourceLibraryClient({ initialTranscripts, initialGloba
       } else if (activeTab === 'materials' && selectedMaterial) {
         const result = await assignResource({
           cohortId: targetCohortId,
-          sessionId: targetSessionId,
+          sessionId: targetSessionId || null,
           title: selectedMaterial.title,
           url: selectedMaterial.url,
           type: selectedMaterial.type,
@@ -429,12 +450,29 @@ export default function ResourceLibraryClient({ initialTranscripts, initialGloba
                     <h3 className="text-xl font-black text-slate-900 tracking-tight">{selectedTranscript.title}</h3>
                     <p className="text-sm font-medium text-slate-400 mt-1 uppercase tracking-widest">Question Bank Configuration</p>
                   </div>
-                  <div className="flex gap-2">
-                    <div className="px-4 py-2 bg-indigo-50 text-indigo-600 rounded-xl text-xs font-black uppercase tracking-widest">
-                      {questions.filter(q => q.is_test).length} Quiz
+                  <div className="flex flex-col items-end gap-2">
+                    <div className="flex gap-2">
+                      <div className="px-4 py-2 bg-indigo-50 text-indigo-600 rounded-xl text-xs font-black uppercase tracking-widest">
+                        {questions.filter(q => q.is_test).length} Quiz
+                      </div>
+                      <div className="px-4 py-2 bg-emerald-50 text-emerald-600 rounded-xl text-xs font-black uppercase tracking-widest">
+                        {questions.filter(q => q.is_practice).length} Practice
+                      </div>
                     </div>
-                    <div className="px-4 py-2 bg-emerald-50 text-emerald-600 rounded-xl text-xs font-black uppercase tracking-widest">
-                      {questions.filter(q => q.is_practice).length} Practice
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleBulkToggle('is_test', true)}
+                        className="text-[9px] font-black text-indigo-600 uppercase tracking-widest hover:underline"
+                      >
+                        Mark All Quiz
+                      </button>
+                      <span className="text-slate-200">|</span>
+                      <button
+                        onClick={() => handleBulkToggle('is_practice', true)}
+                        className="text-[9px] font-black text-emerald-600 uppercase tracking-widest hover:underline"
+                      >
+                        Mark All Practice
+                      </button>
                     </div>
                   </div>
                 </div>

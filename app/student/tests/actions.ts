@@ -32,8 +32,9 @@ export async function verifyTestCode(code: string) {
 }
 
 export async function submitTestAttempt(payload: {
-  testId: string
+  testId: string | null
   transcriptId: string | null
+  cohortId: string | null
   score: number
   totalQuestions: number
   correctCount: number
@@ -53,6 +54,7 @@ export async function submitTestAttempt(payload: {
         user_id: user.id,
         test_id: payload.testId,
         transcript_id: payload.transcriptId,
+        cohort_id: payload.cohortId,
         score: payload.score,
         total_questions: payload.totalQuestions,
         correct_count: payload.correctCount,

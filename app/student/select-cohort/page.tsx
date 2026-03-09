@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { setActiveCohort } from './actions'
 import AutoSelectCohort from './AutoSelectCohort'
+import CohortJoin from '@/components/student/CohortJoin'
 
 export const metadata = { title: 'Select Cohort | Training Portal' }
 
@@ -40,16 +41,19 @@ export default async function SelectCohortPage() {
         </div>
 
         {cohorts.length === 0 ? (
-          <div className="bg-white border border-slate-200 rounded-2xl p-10 text-center shadow-sm">
-            <div className="w-14 h-14 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-amber-100">
-              <svg className="w-7 h-7 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-              </svg>
+          <div className="space-y-6">
+            <div className="bg-white border border-slate-200 rounded-2xl p-10 text-center shadow-sm">
+              <div className="w-14 h-14 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-amber-100">
+                <svg className="w-7 h-7 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+              </div>
+              <h1 className="text-xl font-bold text-slate-900 mb-2">No Cohort Assigned</h1>
+              <p className="text-slate-500 text-sm leading-relaxed mb-6">
+                You haven't been added to any training cohort yet. You can join your first class by entering an invite code below.
+              </p>
             </div>
-            <h1 className="text-xl font-bold text-slate-900 mb-2">No Cohort Assigned</h1>
-            <p className="text-slate-500 text-sm leading-relaxed">
-              You haven't been added to any training cohort yet. Please contact your administrator.
-            </p>
+            <CohortJoin />
           </div>
         ) : (
           <>
@@ -81,6 +85,10 @@ export default async function SelectCohortPage() {
                   </button>
                 </form>
               ))}
+            </div>
+            
+            <div className="mt-8 border-t border-slate-200 pt-8">
+              <CohortJoin />
             </div>
           </>
         )}

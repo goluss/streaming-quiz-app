@@ -2,7 +2,6 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
 import Link from 'next/link'
-import TestCodeEntry from '@/components/student/TestCodeEntry'
 
 export const metadata = { title: 'Dashboard | Training Portal' }
 
@@ -51,7 +50,6 @@ export default async function StudentDashboard() {
           )}
         </div>
       </div>
-
 
       {/* ── Session Resources ── */}
       <div>

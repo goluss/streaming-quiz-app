@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { ArrowDownTrayIcon, UserPlusIcon, CheckCircleIcon, XMarkIcon, ChartPieIcon, TableCellsIcon, LinkIcon, PlusIcon, TrashIcon, CloudArrowUpIcon, PaperClipIcon, FilmIcon, DocumentTextIcon, ChevronDownIcon, ChevronUpIcon, TrophyIcon, PencilIcon, CheckIcon, AcademicCapIcon, UserGroupIcon } from '@heroicons/react/24/outline'
+import { assignResource, assignPractice } from '../../app/admin/cohorts/actions'
 
 interface Profile {
   id: string
@@ -33,7 +34,9 @@ interface TestAttempt {
   created_at: string
   answers_provided?: any[]
   profiles?: { full_name: string | null, email: string } | { full_name: string | null, email: string }[] | null
-  tests?: { name: string, cohort_id: string, transcripts?: { title: string } | { title: string }[] } | { name: string, cohort_id: string, transcripts?: { title: string } | { title: string }[] }[] | null
+  tests?: { name: string } | { name: string }[] | null
+  transcripts?: { title: string } | { title: string }[] | null
+  cohort_id?: string
 }
 
 interface QuestionStat {
@@ -171,9 +174,10 @@ export default function CohortDetailClient({ cohort, initialSessions, transcript
       .select(`
         id, score, total_questions, correct_count, created_at, answers_provided,
         profiles ( full_name, email ),
-        tests!inner ( name, cohort_id, transcripts ( title ) )
+        tests ( name ),
+        transcripts ( title )
       `)
-      .eq('tests.cohort_id', cohort.id)
+      .eq('cohort_id', cohort.id)
       .order('created_at', { ascending: false })
     
     const attempts = (lbData as any) ?? []
@@ -226,7 +230,6 @@ export default function CohortDetailClient({ cohort, initialSessions, transcript
 
     setLoadingResources(true)
     try {
-      const { assignResource } = await import('../../app/admin/cohorts/actions')
       const result = await assignResource({
         cohortId: cohort.id,
         sessionId,
@@ -263,7 +266,6 @@ export default function CohortDetailClient({ cohort, initialSessions, transcript
     const orderNum = sessions.findIndex(s => s.id === sessionId) + 1
 
     try {
-      const { assignPractice } = await import('../../app/admin/cohorts/actions')
       const result = await assignPractice({
         cohortId: cohort.id,
         sessionId,
@@ -303,13 +305,14 @@ export default function CohortDetailClient({ cohort, initialSessions, transcript
     const rows = analytics.map(attempt => {
       const p = Array.isArray(attempt.profiles) ? attempt.profiles[0] : attempt.profiles
       const t = Array.isArray(attempt.tests) ? attempt.tests[0] : attempt.tests
-      const trans = Array.isArray(t?.transcripts) ? t?.transcripts[0] : t?.transcripts
-      const correctCount = Math.round((attempt.score / 100) * attempt.total_questions)
+      const tr = Array.isArray(attempt.transcripts) ? attempt.transcripts[0] : attempt.transcripts
+      const quizTitle = t?.name || tr?.title || 'Unnamed Practice'
+      const correctCount = attempt.correct_count
       return [
         `"${p?.full_name || 'Anonymous'}"`,
         `"${p?.email || ''}"`,
-        `"${t?.name || 'Unknown Quiz'}"`,
-        `"${trans?.title || 'Unknown Source'}"`,
+        `"${quizTitle}"`,
+        `"${tr?.title || 'Standalone Quiz'}"`,
         attempt.score,
         correctCount,
         attempt.total_questions,
@@ -486,13 +489,19 @@ export default function CohortDetailClient({ cohort, initialSessions, transcript
                     analytics.map(attempt => {
                       const p = Array.isArray(attempt.profiles) ? attempt.profiles[0] : attempt.profiles
                       const t = Array.isArray(attempt.tests) ? attempt.tests[0] : attempt.tests
+                      const tr = Array.isArray(attempt.transcripts) ? attempt.transcripts[0] : attempt.transcripts
+                      const quizTitle = t?.name || tr?.title || 'Unnamed Practice'
+                      
                       return (
                         <tr key={attempt.id} className="hover:bg-slate-50 transition-colors">
                           <td className="px-5 py-4">
                             <p className="font-bold text-slate-900">{p?.full_name || 'Anonymous'}</p>
                             <p className="text-[10px] text-slate-400 font-bold uppercase">{p?.email}</p>
                           </td>
-                          <td className="px-5 py-4 text-slate-500 font-medium">{t?.name || 'Unknown'}</td>
+                          <td className="px-5 py-4">
+                            <p className="text-slate-500 font-medium">{quizTitle}</p>
+                            {tr && <p className="text-[9px] text-emerald-600 font-black uppercase tracking-widest">Practice</p>}
+                          </td>
                           <td className="px-5 py-4 text-right">
                            <span className={`px-2 py-1 rounded-md text-xs font-black ${attempt.score >= 80 ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
                              {attempt.correct_count} / {attempt.total_questions}

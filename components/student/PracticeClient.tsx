@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect } from 'react'
 import { generateRandomizedTest, type RandomizedQuestion } from '@/lib/test-generator'
 import Link from 'next/link'
 import { CheckCircleIcon, XCircleIcon, ArrowLeftIcon, ArrowRightIcon, AcademicCapIcon } from '@heroicons/react/24/outline'
+import { submitTestAttempt } from '@/app/student/tests/actions'
 
 interface Props {
   questions: {
@@ -15,9 +16,12 @@ interface Props {
     category: string | null
   }[]
   transcriptTitle: string
+  transcriptId: string
+  cohortId: string | null
 }
 
-export default function PracticeClient({ questions, transcriptTitle }: Props) {
+export default function PracticeClient({ questions, transcriptTitle, transcriptId, cohortId }: Props) {
+  const [submitting, setSubmitting] = useState(false)
   const [randomizedTest, setRandomizedTest] = useState<RandomizedQuestion[]>([])
   const [isMounted, setIsMounted] = useState(false)
   const [currentIdx, setCurrentIdx] = useState(0)
@@ -55,6 +59,39 @@ export default function PracticeClient({ questions, transcriptTitle }: Props) {
       setCurrentIdx(prev => prev - 1)
       setShowFeedback(true) // Always show feedback if they go back to an answered question
     }
+  }
+
+  const handleComplete = async () => {
+    if (submitting) return
+    setSubmitting(true)
+    
+    const correctCount = Object.keys(responses).filter(id => {
+      const q = randomizedTest.find(rq => rq.id === id)
+      return q && responses[id] === q.correct_answer
+    }).length
+    
+    const total = randomizedTest.length
+    const score = total > 0 ? (correctCount / total) * 100 : 0
+    
+    // Format answers for storage (ensure no undefined values to avoid Server Action crashes)
+    const answersProvided = randomizedTest.map(q => ({
+      question_id: q.id,
+      chosen_answer: responses[q.id] ?? '',
+      correct_answer: q.correct_answer,
+      is_correct: responses[q.id] === q.correct_answer
+    }))
+
+    await submitTestAttempt({
+      testId: null, // Practice sessions don't have a specific Test ID
+      transcriptId,
+      cohortId,
+      score,
+      totalQuestions: total,
+      correctCount,
+      answers: answersProvided
+    })
+
+    window.location.href = '/student'
   }
 
   if (!isMounted) return null
@@ -213,12 +250,13 @@ export default function PracticeClient({ questions, transcriptTitle }: Props) {
         </button>
 
         {isFinished ? (
-          <Link
-            href="/student"
-            className="flex items-center gap-2 bg-[#003B71] hover:bg-[#00264d] text-white px-10 py-4 rounded-2xl font-black uppercase tracking-widest text-xs transition-all shadow-xl active:scale-95"
+          <button
+            onClick={handleComplete}
+            disabled={submitting}
+            className="flex items-center gap-2 bg-[#003B71] hover:bg-[#00264d] text-white px-10 py-4 rounded-2xl font-black uppercase tracking-widest text-xs transition-all shadow-xl active:scale-95 disabled:opacity-50"
           >
-            Complete Session <AcademicCapIcon className="w-5 h-5 stroke-[2.5]" />
-          </Link>
+            {submitting ? 'Saving...' : 'Complete Session'} <AcademicCapIcon className="w-5 h-5 stroke-[2.5]" />
+          </button>
         ) : (
           <button
             onClick={handleNext}

@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import { cookies } from 'next/headers'
 import PracticeClient from '@/components/student/PracticeClient'
 
 interface PageProps {
@@ -17,6 +18,9 @@ export default async function PracticePage({ params }: PageProps) {
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) redirect('/login')
+
+  const cookieStore = await cookies()
+  const activeCohortId = cookieStore.get('active_cohort_id')?.value
 
   // Fetch transcript details
   const { data: transcript } = await supabase
@@ -41,6 +45,8 @@ export default async function PracticePage({ params }: PageProps) {
       <PracticeClient 
         questions={questions ?? []} 
         transcriptTitle={transcript.title} 
+        transcriptId={id}
+        cohortId={activeCohortId ?? null}
       />
     </div>
   )
