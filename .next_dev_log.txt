@@ -2,13 +2,56 @@
 > training-portal@0.1.0 dev
 > next dev
 
-⚠ Port 3000 is in use by process 14104, using available port 3002 instead.
 ▲ Next.js 16.1.6 (Turbopack)
-- Local:         http://localhost:3002
-- Network:       http://172.20.10.2:3002
+- Local:         http://localhost:3000
+- Network:       http://192.168.86.134:3000
 - Environments: .env.local
 
 ✓ Starting...
-⨯ Unable to acquire lock at /Users/stevengolus/.gemini/antigravity/scratch/training-portal/.next/dev/lock, is another instance of next dev running?
-  Suggestion: If you intended to restart next dev, terminate the other process, and then try again.
-[?25h
+⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+✓ Ready in 743ms
+[Middleware] Handling GET /student
+[Middleware] Calling getUser()
+[Middleware] user found: true
+[Middleware] Fetching profile for 48bc0ccf-a419-4c29-8e04-07719759a7bd
+[Middleware] profile found: true
+ GET /student 200 in 1370ms (compile: 454ms, proxy.ts: 517ms, render: 400ms)
+[Middleware] Handling HEAD /login
+[Middleware] Calling getUser()
+[Middleware] user found: false
+ HEAD /login 200 in 49ms (compile: 24ms, proxy.ts: 4ms, render: 22ms)
+⨯ The file "./proxy.ts" must export a function, either as a default export or as a named "proxy" export.
+This function is what Next.js runs for every request handled by this proxy (previously called middleware).
+
+Why this happens:
+- You are migrating from `middleware` to `proxy`, but haven't updated the exported function.
+- The file exists but doesn't export a function.
+- The export is not a function (e.g., an object or constant).
+- There's a syntax error preventing the export from being recognized.
+
+To fix it:
+- Ensure this file has either a default or "proxy" function export.
+
+Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+⨯ [Error: The Proxy file "/proxy" must export a function named `proxy` or a default function.]
+✓ Compiled in 94ms
+ GET /student 404 in 154ms (compile: -50565µs, proxy.ts: 152ms, render: 52ms)
+⨯ [Error: The Proxy file "/proxy" must export a function named `proxy` or a default function.]
+ GET /student 404 in 41ms (compile: -6329µs, proxy.ts: 11ms, render: 37ms)
+⨯ [Error: The Proxy file "/proxy" must export a function named `proxy` or a default function.]
+⨯ [Error: The Proxy file "/proxy" must export a function named `proxy` or a default function.]
+ GET /student 404 in 16ms (compile: -3777µs, proxy.ts: 14ms, render: 6ms)
+ GET /student 404 in 39ms (compile: -2850µs, proxy.ts: 36ms, render: 6ms)
+⨯ [Error: The Proxy file "/proxy" must export a function named `proxy` or a default function.]
+[Middleware] Handling GET /student
+[Middleware] Calling getUser()
+✓ Compiled in 34ms
+[Middleware] user found: true
+[Middleware] Fetching profile for 48bc0ccf-a419-4c29-8e04-07719759a7bd
+[Middleware] profile found: true
+ GET /student 200 in 499ms (compile: 3ms, proxy.ts: 293ms, render: 203ms)
+[Middleware] Handling HEAD /login
+[Middleware] Calling getUser()
+[Middleware] user found: false
+ HEAD /login 200 in 28ms (compile: 4ms, proxy.ts: 8ms, render: 16ms)
+✓ Compiled in 21ms

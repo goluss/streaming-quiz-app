@@ -78,7 +78,7 @@ export default function LoginPage() {
               },
             }}
             providers={['google']}
-            redirectTo={`${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`}
+            redirectTo={typeof window !== 'undefined' ? `${window.location.origin}/auth/callback` : undefined}
             localization={{
               variables: {
                 sign_in: {
