@@ -40,11 +40,11 @@ export default function SetupProfileClient({ profile, email }: Props) {
 
       if (upsertError) {
         setLoading(false)
-        setError(upsertError.message || 'Failed to securely save your profile. Please try again.')
+        setError(upsertError.message || 'Failed to save your profile. Please try again.')
         return
       }
 
-      // Automatically join the passed cohort ID or validate/join the manual invite string securely on the backend
+      // Join the cohort securely on the backend
       const result = await joinCohortSecurely(profile.id, profile?.cohort_id, inviteCode.trim())
       
       if (!result?.success) {
@@ -53,12 +53,13 @@ export default function SetupProfileClient({ profile, email }: Props) {
         return
       }
 
+      // Success! Refresh and redirect
       setLoading(false)
-      router.push('/student')
       router.refresh()
+      router.push('/student')
     } catch (err: any) {
       setLoading(false)
-      setError(err.message || 'An unexpected error occurred during profile setup. Please try again.')
+      setError(err.message || 'An unexpected error occurred. Please try again.')
     }
   }
 
